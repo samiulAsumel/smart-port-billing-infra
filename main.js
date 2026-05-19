@@ -1,152 +1,176 @@
-/* Smart Port Billing Infrastructure — Main JS
-   Terminal animation · Script explorer · Scroll reveals · Skills bars
-   ─────────────────────────────────────────────────────────────────── */
-
+/* Smart Port Billing Infrastructure — main.js
+   Script explorer with line numbers · Copy · Download · Toast
+   Terminal animation · Scroll reveals · Skills · Counters
+   ─────────────────────────────────────────────────────────── */
 'use strict';
 
-// ── Script metadata & RHCSA tags ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// SCRIPT REGISTRY  (file · description · RHCSA tags)
+// ════════════════════════════════════════════════════════════════════════
 const SCRIPTS = [
   {
     file: '01_user_group_setup.sh',
-    tags: ['useradd', 'groupadd', 'chage', 'visudo', 'sudoers.d', 'RHCSA'],
+    desc: 'Creates 4 department groups, 5 named users with forced password change, 90-day chage policy, sudo rules in sudoers.d, and 0750 home directories. Idempotent — safe to re-run.',
+    tags: ['useradd', 'groupadd', 'chage', 'visudo', 'sudoers.d', 'RHCSA EX200'],
   },
   {
     file: '02_storage_lvm.sh',
+    desc: 'Provisions a Physical Volume on a block device, creates the portbill-vg Volume Group, carves 3 Logical Volumes (data 10G, logs 5G, backup 15G), formats XFS, writes UUID-based fstab entries, mounts, and applies SELinux file contexts.',
     tags: ['pvcreate', 'vgcreate', 'lvcreate', 'mkfs.xfs', 'blkid', 'fstab', 'LVM', 'XFS'],
   },
   {
     file: '03_firewall_selinux.sh',
-    tags: ['firewall-cmd', 'rich rules', 'semanage', 'setsebool', 'restorecon', 'SELinux'],
+    desc: 'Creates a dedicated portbilling firewall zone with rich rules (SSH restricted to admin /24, HTTPS to billing LAN, HTTP rate-limited). Enforces SELinux, sets custom fcontext for all billing paths, and configures httpd booleans — persistent across reboots.',
+    tags: ['firewall-cmd', 'rich rules', 'semanage', 'setsebool', 'restorecon', 'enforcing'],
   },
   {
     file: '04_ssh_hardening.sh',
-    tags: ['sshd_config', 'PubkeyAuthentication', 'AllowGroups', 'MaxAuthTries', 'CIS'],
+    desc: 'Backs up sshd_config, writes a hardened config (port 2222, key-only auth, AllowGroups billing-admin, FIPS-grade ciphers, all forwarding disabled), validates syntax with sshd -t before restarting, writes legal banner, and labels the custom port with SELinux.',
+    tags: ['sshd_config', 'PubkeyAuthentication', 'AllowGroups', 'MaxAuthTries', 'CIS', 'NIST'],
   },
   {
     file: '05_service_deploy.sh',
-    tags: ['podman run', 'systemd unit', 'nginx', 'TLS', 'health check', 'ExecStart'],
+    desc: 'Pulls the portbill Podman image, writes a hardened systemd unit (NoNewPrivileges, PrivateTmp, ProtectSystem), generates a self-signed TLS cert, configures Nginx as a TLS 1.3 reverse proxy with security headers, and polls the /health endpoint to confirm the container is live.',
+    tags: ['podman run', 'systemd unit', 'nginx', 'TLS 1.3', 'health check', 'ExecStart'],
   },
   {
     file: '06_acl_backup.sh',
-    tags: ['setfacl', 'getfacl', 'default ACL', 'sha256sum', 'systemd timer', 'tar'],
+    desc: 'Sets granular POSIX ACLs with default inheritance on all 3 billing volumes (billing-admin:rwx, billing-ops:rwx, port-ops:r-x, readonly:r-x), writes a backup script with SHA-256 integrity checking, and enables a systemd timer for nightly 02:00 backups with 30-day retention.',
+    tags: ['setfacl', 'getfacl', 'default ACL', 'sha256sum', 'systemd timer', 'tar --acls'],
   },
   {
     file: '07_log_monitor.sh',
-    tags: ['journalctl', 'rsyslog', 'logrotate', 'alerting', 'logger', 'logmonitor'],
+    desc: 'Configures rsyslog to route portbill service messages and billing audit events to dedicated log files, sets up logrotate with 90-day retention and postrotate hooks, deploys a real-time monitoring service that alerts on critical patterns, and enables a daily summary timer.',
+    tags: ['journalctl', 'rsyslog', 'logrotate', 'alerting', 'logger', 'persistent journal'],
   },
 ];
 
-// ── Terminal sequences ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// HERO TERMINAL ANIMATION
+// ════════════════════════════════════════════════════════════════════════
 const TERMINAL_SEQUENCES = [
   {
-    cmd: 'sudo ./scripts/01_user_group_setup.sh',
+    cmd: 'sudo bash scripts/01_user_group_setup.sh',
     lines: [
-      { cls: 'term-line-info',  text: '[08:42:15] INFO  Starting user provisioning...' },
-      { cls: 'term-line-ok',    text: '[08:42:16]  OK   Created group: billing-admin' },
-      { cls: 'term-line-ok',    text: '[08:42:16]  OK   Created user: portadmin → billing-admin' },
-      { cls: 'term-line-ok',    text: '[08:42:17]  OK   Sudo rules written: /etc/sudoers.d/portbill' },
+      { cls: 'term-line-info', text: '[08:42:15] INFO  Starting Port Billing user provisioning...' },
+      { cls: 'term-line-ok',   text: '[08:42:16]  OK   Created group: billing-admin' },
+      { cls: 'term-line-ok',   text: '[08:42:16]  OK   Created user: portadmin → billing-admin' },
+      { cls: 'term-line-ok',   text: '[08:42:17]  OK   Sudo rules written: /etc/sudoers.d/portbill' },
     ],
   },
   {
-    cmd: 'sudo ./scripts/03_firewall_selinux.sh',
+    cmd: 'sudo bash scripts/03_firewall_selinux.sh',
     lines: [
-      { cls: 'term-line-info',  text: '[08:44:01] INFO  Configuring firewalld zones...' },
-      { cls: 'term-line-ok',    text: '[08:44:02]  OK   Zone created: portbilling' },
-      { cls: 'term-line-ok',    text: '[08:44:03]  OK   Rich rule: SSH port 2222 → admin subnet' },
-      { cls: 'term-line-ok',    text: '[08:44:04]  OK   SELinux set to enforcing (persistent)' },
+      { cls: 'term-line-info', text: '[08:44:01] INFO  Configuring firewalld zones...' },
+      { cls: 'term-line-ok',   text: '[08:44:02]  OK   Zone created: portbilling (target=REJECT)' },
+      { cls: 'term-line-ok',   text: '[08:44:03]  OK   Rich rule: SSH :2222 ← 192.168.10.0/24' },
+      { cls: 'term-line-ok',   text: '[08:44:04]  OK   SELinux set to enforcing (persistent)' },
     ],
   },
   {
-    cmd: 'sudo ./scripts/05_service_deploy.sh',
+    cmd: 'sudo bash scripts/04_ssh_hardening.sh',
     lines: [
-      { cls: 'term-line-info',  text: '[08:45:10] INFO  Pulling container image...' },
-      { cls: 'term-line-ok',    text: '[08:45:28]  OK   Container image ready: portbill:latest' },
-      { cls: 'term-line-ok',    text: '[08:45:29]  OK   Nginx configuration syntax valid' },
-      { cls: 'term-line-ok',    text: '[08:45:31]  OK   Health check passed — portbill running' },
+      { cls: 'term-line-info', text: '[08:45:10] INFO  Writing hardened SSH configuration...' },
+      { cls: 'term-line-ok',   text: '[08:45:11]  OK   Port 2222 · PasswordAuthentication no' },
+      { cls: 'term-line-ok',   text: '[08:45:12]  OK   Configuration syntax valid' },
+      { cls: 'term-line-ok',   text: '[08:45:13]  OK   sshd restarted and enabled' },
+    ],
+  },
+  {
+    cmd: 'sudo bash scripts/05_service_deploy.sh',
+    lines: [
+      { cls: 'term-line-info', text: '[08:46:00] INFO  Pulling container image...' },
+      { cls: 'term-line-ok',   text: '[08:46:18]  OK   Container image ready: portbill:latest' },
+      { cls: 'term-line-ok',   text: '[08:46:20]  OK   Nginx configuration syntax valid' },
+      { cls: 'term-line-ok',   text: '[08:46:22]  OK   Health check passed — portbill running' },
     ],
   },
 ];
 
-// ── DOM references ────────────────────────────────────────────────────────────
-const termCmd    = document.getElementById('term-cmd');
-const termLines  = document.getElementById('term-lines');
-const viewerCode = document.getElementById('viewer-code');
-const viewerFile = document.getElementById('viewer-filename');
-const viewerLc   = document.getElementById('viewer-linecount');
-const viewerTags = document.getElementById('viewer-tags');
+// DOM refs for hero terminal
+const termCmd   = document.getElementById('term-cmd');
+const termLines = document.getElementById('term-lines');
 
-// ══════════════════════════════════════════════════════════════════════════════
-// TERMINAL ANIMATION
-// ══════════════════════════════════════════════════════════════════════════════
 let seqIdx = 0;
-let termRunning = false;
 
-async function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function typeText(el, text, speed = 38) {
+async function typeText(el, text, speed = 36) {
   el.textContent = '';
   for (const ch of text) {
     el.textContent += ch;
-    await sleep(speed + Math.random() * 20);
+    await sleep(speed + Math.random() * 18);
   }
 }
 
 async function runTermSequence() {
-  if (termRunning) return;
-  termRunning = true;
-
+  if (!termCmd || !termLines) return;
   while (true) {
     const seq = TERMINAL_SEQUENCES[seqIdx % TERMINAL_SEQUENCES.length];
     seqIdx++;
 
     termLines.innerHTML = '';
-    await typeText(termCmd, seq.cmd, 35);
-    await sleep(300);
+    await typeText(termCmd, seq.cmd, 32);
+    await sleep(280);
 
-    for (const lineData of seq.lines) {
-      const div = document.createElement('div');
-      div.className = lineData.cls;
-      termLines.appendChild(div);
-      await typeText(div, lineData.text, 12);
-      await sleep(150);
+    for (const ld of seq.lines) {
+      const d = document.createElement('div');
+      d.className = ld.cls;
+      termLines.appendChild(d);
+      await typeText(d, ld.text, 11);
+      await sleep(130);
     }
 
-    await sleep(3200);
-
-    // Fade out
+    await sleep(3400);
     termLines.style.transition = 'opacity 0.5s';
     termLines.style.opacity = '0';
-    await sleep(600);
+    await sleep(550);
     termCmd.textContent = '';
     termLines.innerHTML = '';
     termLines.style.opacity = '1';
-    await sleep(500);
+    await sleep(400);
   }
 }
-
-// Start terminal animation on page load
 runTermSequence();
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SCRIPT EXPLORER
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
+// TOAST NOTIFICATION
+// ════════════════════════════════════════════════════════════════════════
+function showToast(message, type = 'success') {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
 
-// Use embedded content from scripts-data.js (works without a web server).
-// Falls back to fetch() if SCRIPT_CONTENT is not available (e.g. GitHub Pages CDN).
+  const icons = { success: '✓', error: '✗', info: 'ℹ' };
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.setAttribute('role', 'status');
+  t.setAttribute('aria-live', 'polite');
+  t.innerHTML =
+    `<span class="toast-icon" aria-hidden="true">${icons[type] ?? icons.info}</span>` +
+    `<span class="toast-msg">${message}</span>`;
+  document.body.appendChild(t);
+
+  requestAnimationFrame(() => t.classList.add('toast-show'));
+  setTimeout(() => {
+    t.classList.remove('toast-show');
+    setTimeout(() => t.remove(), 320);
+  }, 2600);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// SCRIPT EXPLORER — with line numbers, copy & download
+// ════════════════════════════════════════════════════════════════════════
+let currentRaw = '';
 const scriptCache = new Map();
 
 async function loadScript(filename) {
   if (scriptCache.has(filename)) return scriptCache.get(filename);
 
-  // Prefer embedded content — instant, no network, works file://
+  // Embedded content first (works file://)
   if (typeof SCRIPT_CONTENT !== 'undefined' && SCRIPT_CONTENT[filename]) {
     scriptCache.set(filename, SCRIPT_CONTENT[filename]);
     return SCRIPT_CONTENT[filename];
   }
-
-  // Fallback: try fetch (works on GitHub Pages / Vercel)
+  // Fallback: network
   try {
     const res = await fetch(`./scripts/${filename}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -154,33 +178,55 @@ async function loadScript(filename) {
     scriptCache.set(filename, text);
     return text;
   } catch {
-    return `# ${filename}\n# (Could not load — open via GitHub Pages or a local web server)`;
+    return `#!/usr/bin/env bash\n# ${filename}\n# Script content unavailable — open via GitHub Pages or Vercel.`;
   }
+}
+
+function highlightBash(raw) {
+  if (typeof hljs !== 'undefined') {
+    return hljs.highlight(raw, { language: 'bash', ignoreIllegals: true }).value;
+  }
+  return raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildCodeHtml(raw) {
+  const highlighted = highlightBash(raw);
+  const lines = highlighted.split('\n');
+  if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  return lines.map((line, i) =>
+    `<div class="code-row">\
+<span class="ln" aria-hidden="true">${i + 1}</span>\
+<span class="lc">${line || '​'}</span></div>`
+  ).join('');
 }
 
 async function showScript(filename, idx) {
-  const meta = SCRIPTS[idx];
+  const meta    = SCRIPTS[idx];
+  const wrapEl  = document.getElementById('viewer-code-wrap');
+  const fileEl  = document.getElementById('viewer-filename');
+  const lcEl    = document.getElementById('viewer-linecount');
+  const descEl  = document.getElementById('viewer-desc');
+  const tagsEl  = document.getElementById('viewer-tags');
+  if (!wrapEl) return;
 
-  viewerFile.textContent = filename;
-  viewerCode.textContent = 'Loading...';
+  fileEl.textContent = filename;
+  wrapEl.innerHTML = '<div class="viewer-loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>';
 
-  const code = await loadScript(filename);
-  viewerCode.className = 'language-bash hljs';
-  viewerCode.textContent = code;
+  const raw = await loadScript(filename);
+  currentRaw = raw;
 
-  if (typeof hljs !== 'undefined') {
-    hljs.highlightElement(viewerCode);
-  }
+  const lineCount = raw.split('\n').length;
+  const kbSize    = (new TextEncoder().encode(raw).length / 1024).toFixed(1);
+  lcEl.textContent = `${lineCount} lines · ${kbSize} KB`;
 
-  const lines = code.split('\n').length;
-  viewerLc.textContent = `${lines} lines`;
+  wrapEl.innerHTML = buildCodeHtml(raw);
 
-  viewerTags.innerHTML = meta.tags
-    .map(t => `<span class="stag">${t}</span>`)
-    .join('');
+  if (descEl) descEl.textContent = meta.desc || '';
+  if (tagsEl) tagsEl.innerHTML = meta.tags.map(t => `<span class="stag">${t}</span>`).join('');
 }
 
-document.querySelectorAll('.script-tab').forEach(tab => {
+// Tab switching
+document.querySelectorAll('.script-tab').forEach((tab, _) => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.script-tab').forEach(t => {
       t.classList.remove('active');
@@ -188,156 +234,192 @@ document.querySelectorAll('.script-tab').forEach(tab => {
     });
     tab.classList.add('active');
     tab.setAttribute('aria-selected', 'true');
-
-    const filename = tab.dataset.script;
-    const idx      = parseInt(tab.dataset.idx, 10);
-    showScript(filename, idx);
+    showScript(tab.dataset.script, parseInt(tab.dataset.idx, 10));
   });
+});
+
+// Keyboard navigation (↑/↓ arrows in script list)
+document.querySelectorAll('.script-tab').forEach((tab, i, all) => {
+  tab.setAttribute('tabindex', i === 0 ? '0' : '-1');
+  tab.addEventListener('keydown', e => {
+    let next = -1;
+    if (e.key === 'ArrowDown') next = Math.min(i + 1, all.length - 1);
+    if (e.key === 'ArrowUp')   next = Math.max(i - 1, 0);
+    if (next >= 0) {
+      all.forEach((t, j) => t.setAttribute('tabindex', j === next ? '0' : '-1'));
+      all[next].focus();
+      all[next].click();
+      e.preventDefault();
+    }
+  });
+});
+
+// Copy button
+document.getElementById('viewer-copy')?.addEventListener('click', async () => {
+  const filename = document.getElementById('viewer-filename')?.textContent;
+  const raw = (typeof SCRIPT_CONTENT !== 'undefined' && SCRIPT_CONTENT[filename])
+    ? SCRIPT_CONTENT[filename] : currentRaw;
+  try {
+    await navigator.clipboard.writeText(raw);
+    showToast(`Copied ${filename}`, 'success');
+  } catch {
+    showToast('Copy failed — select all and Ctrl+C', 'error');
+  }
+});
+
+// Download button
+document.getElementById('viewer-download')?.addEventListener('click', () => {
+  const filename = document.getElementById('viewer-filename')?.textContent;
+  const raw = (typeof SCRIPT_CONTENT !== 'undefined' && SCRIPT_CONTENT[filename])
+    ? SCRIPT_CONTENT[filename] : currentRaw;
+  const blob = new Blob([raw], { type: 'text/x-sh; charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Downloaded ${filename}`, 'success');
 });
 
 // Load first script on init
 showScript(SCRIPTS[0].file, 0);
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 // SECURITY TABS
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 document.querySelectorAll('.sec-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const target = tab.dataset.sec;
-
     document.querySelectorAll('.sec-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-
     document.querySelectorAll('.sec-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById(`sec-${target}`);
-    if (panel) panel.classList.add('active');
-
-    // Re-highlight any code in the newly visible panel
+    if (!panel) return;
+    panel.classList.add('active');
     if (typeof hljs !== 'undefined') {
-      panel.querySelectorAll('code').forEach(c => {
-        if (!c.dataset.highlighted) hljs.highlightElement(c);
-      });
+      panel.querySelectorAll('code:not([data-highlighted])').forEach(c => hljs.highlightElement(c));
     }
   });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 // SCROLL REVEAL
-// ══════════════════════════════════════════════════════════════════════════════
-const revealObserver = new IntersectionObserver(
-  entries => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => {
-          entry.target.classList.add('visible');
-        }, i * 80);
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.12 }
-);
-document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+// ════════════════════════════════════════════════════════════════════════
+new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 75);
+    }
+  });
+}, { threshold: 0.1 })
+.observe.bind(null) // placeholder — real attachment below
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SKILLS BARS — animate on scroll into view
-// ══════════════════════════════════════════════════════════════════════════════
-const barObserver = new IntersectionObserver(
-  entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const bar = entry.target;
-        const width = bar.dataset.width || 0;
-        setTimeout(() => { bar.style.width = `${width}%`; }, 200);
-        barObserver.unobserve(bar);
-      }
-    });
-  },
-  { threshold: 0.3 }
-);
-document.querySelectorAll('.skill-bar').forEach(bar => barObserver.observe(bar));
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 75);
+      revealObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
+// SKILL BARS
+// ════════════════════════════════════════════════════════════════════════
+const barObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const w = e.target.dataset.width ?? 0;
+      setTimeout(() => { e.target.style.width = `${w}%`; }, 180);
+      barObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.skill-bar').forEach(b => barObs.observe(b));
+
+// ════════════════════════════════════════════════════════════════════════
 // COUNTER ANIMATION
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 function animateCounter(el, target, duration = 1200) {
   const start = performance.now();
-  function update(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    el.textContent = Math.round(eased * target);
-    if (progress < 1) requestAnimationFrame(update);
-  }
-  requestAnimationFrame(update);
+  const tick = now => {
+    const p = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
+new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const n = parseInt(e.target.dataset.count, 10);
+      if (!isNaN(n)) animateCounter(e.target, n);
+    }
+  });
+}, { threshold: 0.5 })
+.observe; // — handled below
 
-const counterObserver = new IntersectionObserver(
-  entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const target = parseInt(entry.target.dataset.count, 10);
-        if (!isNaN(target)) animateCounter(entry.target, target);
-        counterObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.5 }
-);
-document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
+const ctrObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const n = parseInt(e.target.dataset.count, 10);
+      if (!isNaN(n)) animateCounter(e.target, n);
+      ctrObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('[data-count]').forEach(el => ctrObs.observe(el));
 
-// ══════════════════════════════════════════════════════════════════════════════
-// HEADER: active nav + scroll styling
-// ══════════════════════════════════════════════════════════════════════════════
-const sections = document.querySelectorAll('section[id], div[id="stats-bar"]');
-const navLinks  = document.querySelectorAll('.nav-link');
-const header    = document.getElementById('site-header');
+// ════════════════════════════════════════════════════════════════════════
+// HEADER — active nav link + scroll class
+// ════════════════════════════════════════════════════════════════════════
+const navLinks = document.querySelectorAll('.nav-link');
+const header   = document.getElementById('site-header');
 
-const navObserver = new IntersectionObserver(
-  entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        navLinks.forEach(link => {
-          link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
-        });
-      }
-    });
-  },
-  { rootMargin: `-${60}px 0px -50% 0px` }
-);
-sections.forEach(s => navObserver.observe(s));
+new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${e.target.id}`));
+    }
+  });
+}, { rootMargin: '-60px 0px -50% 0px' })
+.observe; // — handled below
+
+const secObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${e.target.id}`));
+    }
+  });
+}, { rootMargin: '-60px 0px -50% 0px' });
+document.querySelectorAll('section[id]').forEach(s => secObs.observe(s));
 
 window.addEventListener('scroll', () => {
-  header.classList.toggle('scrolled', window.scrollY > 20);
+  header?.classList.toggle('scrolled', window.scrollY > 20);
 }, { passive: true });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// HIGHLIGHT.JS — init after page load
-// ══════════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof hljs !== 'undefined') {
-    // Only highlight static blocks (sec-code-wrap), not the viewer (handled separately)
-    document.querySelectorAll('.sec-code-wrap code').forEach(block => {
-      hljs.highlightElement(block);
-    });
-  }
+// ════════════════════════════════════════════════════════════════════════
+// STATS BAR MARQUEE — clone for seamless loop
+// ════════════════════════════════════════════════════════════════════════
+const statsInner = document.querySelector('.stats-inner');
+if (statsInner) statsInner.parentNode.appendChild(statsInner.cloneNode(true));
+
+// ════════════════════════════════════════════════════════════════════════
+// ARCHITECTURE SVG — native title tooltips
+// ════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.arch-node[data-tip]').forEach(node => {
+  const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+  title.textContent = node.dataset.tip;
+  node.prepend(title);
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STATS BAR — duplicate for seamless marquee
-// ══════════════════════════════════════════════════════════════════════════════
-const statsInner = document.querySelector('.stats-inner');
-if (statsInner) {
-  const clone = statsInner.cloneNode(true);
-  statsInner.parentNode.appendChild(clone);
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ARCHITECTURE SVG tooltips (simple title-based)
-// ══════════════════════════════════════════════════════════════════════════════
-document.querySelectorAll('.arch-node[data-tip]').forEach(node => {
-  const tip = node.dataset.tip;
-  const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-  title.textContent = tip;
-  node.prepend(title);
+// ════════════════════════════════════════════════════════════════════════
+// HIGHLIGHT.JS — static security code blocks
+// ════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof hljs !== 'undefined') {
+    document.querySelectorAll('.sec-code-wrap code').forEach(b => hljs.highlightElement(b));
+  }
 });

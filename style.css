@@ -646,10 +646,11 @@ code, pre, .font-mono { font-family: var(--font-mono); }
 .viewer-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
+  gap: 10px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--border-dim);
   background: var(--bg-panel);
+  flex-wrap: wrap;
 }
 .viewer-file {
   display: flex;
@@ -658,44 +659,121 @@ code, pre, .font-mono { font-family: var(--font-mono); }
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.viewer-file svg { color: var(--cyan); }
-.viewer-meta { display: flex; gap: 12px; align-items: center; }
+.viewer-file svg { color: var(--cyan); flex-shrink: 0; }
+.viewer-meta { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .viewer-lang {
   font-family: var(--font-mono);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--orange);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border: 1px solid var(--orange);
   border-radius: 3px;
   background: var(--orange-soft);
 }
-.viewer-lines {
+.viewer-linecount {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
+/* Copy + Download buttons */
+.viewer-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.viewer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.viewer-btn:hover { color: var(--cyan); border-color: var(--cyan); background: var(--cyan-glow); }
+.viewer-btn:active { transform: scale(0.97); }
+
+/* Code wrap with line numbers */
 .viewer-scroll {
   flex: 1;
   overflow: auto;
   padding: 0;
+  background: #08101e;
 }
-.viewer-pre {
-  margin: 0;
-  padding: 24px;
+.viewer-code-wrap {
   font-family: var(--font-mono);
   font-size: 12.5px;
-  line-height: 1.7;
-  background: transparent !important;
-  min-height: 400px;
+  line-height: 1.75;
+  padding: 16px 0;
+  min-height: 420px;
+  tab-size: 4;
+  counter-reset: line;
 }
-.viewer-pre code { background: transparent !important; font-size: inherit; }
+.code-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  min-height: 1.75em;
+}
+.code-row:hover { background: rgba(255,255,255,0.015); }
+.ln {
+  display: block;
+  text-align: right;
+  padding: 0 14px 0 8px;
+  color: #2a3d5a;
+  user-select: none;
+  font-size: 11px;
+  line-height: 1.75;
+  border-right: 1px solid #111f35;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+.code-row:hover .ln { color: #4a6080; }
+.lc {
+  padding: 0 20px;
+  white-space: pre;
+  overflow: visible;
+}
 
-/* Override highlight.js theme for our bg */
+/* Override highlight.js theme */
 .hljs { background: transparent !important; }
+
+/* Loading animation */
+.viewer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+.loading-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: ldot 1.2s ease-in-out infinite;
+}
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ldot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
 
 .viewer-footer {
   padding: 12px 20px;
@@ -1425,6 +1503,104 @@ code, pre, .font-mono { font-family: var(--font-mono); }
 .sv-purple { color: var(--purple); }
 .sv-dim    { color: var(--text-muted); }
 .sv-red    { color: var(--red); }
+
+/* ── Toast notifications ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 340px;
+}
+.toast-show { opacity: 1; transform: translateY(0); }
+.toast-success { background: rgba(10,31,14,0.97); border-color: var(--green); color: var(--green); }
+.toast-error   { background: rgba(31,10,10,0.97); border-color: var(--red);   color: var(--red); }
+.toast-info    { background: rgba(6,20,40,0.97);  border-color: var(--cyan);  color: var(--cyan); }
+.toast-icon { font-size: 14px; flex-shrink: 0; }
+.toast-msg  { line-height: 1.4; }
+
+/* ── Deployment progress bar ─────────────────────────────────────────────── */
+.pg-progress-wrap {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid var(--border-dim);
+  background: var(--bg-raised);
+}
+.pg-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.pg-progress-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.pg-progress-pct {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.pg-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-card);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.pg-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+.pg-progress-steps {
+  display: flex;
+  gap: 6px;
+}
+.pg-step {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  background: var(--bg-card);
+  transition: color 0.3s, border-color 0.3s, background 0.3s;
+}
+.pg-step-done {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(34, 197, 94, 0.08);
+}
+.pg-step-active {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  background: rgba(0, 212, 255, 0.08);
+  animation: step-pulse 1s ease-in-out infinite;
+}
+@keyframes step-pulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 6px rgba(0, 212, 255, 0.5); }
+}
 
 /* ── Responsive playground ───────────────────────────────────────────────── */
 @media (max-width: 1200px) {

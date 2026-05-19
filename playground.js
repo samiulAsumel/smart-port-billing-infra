@@ -189,6 +189,35 @@ function renderState() {
   if (SYS.acls.length) {
     addStateSection('ACLs', SYS.acls.map(a => ({ label: a.path.split('/').pop(), value: a.perms, cls: 'sv-purple' })));
   }
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const done    = SYS.scriptsDone.length;
+  const total   = 7;
+  const pct     = Math.round((done / total) * 100);
+  const bar     = document.getElementById('pg-progress-bar');
+  const track   = document.getElementById('pg-progress-track');
+  const label   = document.getElementById('pg-progress-label');
+  const counter = document.getElementById('pg-progress-pct');
+  if (bar)     bar.style.width = `${pct}%`;
+  if (track)   track.setAttribute('aria-valuenow', done);
+  if (counter) counter.textContent = `${done} / ${total}`;
+  if (label) {
+    if (done === 0)     label.textContent = 'Ready — configure inputs and click Run';
+    else if (done < total) label.textContent = `Deploying… script ${done} of ${total} complete`;
+    else                label.textContent  = 'Deployment complete — all 7 scripts executed';
+  }
+  document.querySelectorAll('.pg-step').forEach(el => {
+    const id = el.dataset.step;
+    el.classList.remove('pg-step-done', 'pg-step-active');
+    if (SYS.scriptsDone.includes(id)) {
+      el.classList.add('pg-step-done');
+    } else if (running && id === String(done + 1).padStart(2, '0')) {
+      el.classList.add('pg-step-active');
+    }
+  });
 }
 
 function addStateSection(title, items) {

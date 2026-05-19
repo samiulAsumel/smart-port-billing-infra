@@ -405,13 +405,32 @@
               </div>
               <div class="viewer-meta">
                 <span class="viewer-lang">bash</span>
-                <span class="viewer-lines" id="viewer-linecount">— lines</span>
+                <span class="viewer-linecount" id="viewer-linecount">— lines</span>
+              </div>
+              <div class="viewer-actions">
+                <button class="viewer-btn" id="viewer-copy" title="Copy to clipboard" aria-label="Copy script to clipboard">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="5.5" y="5.5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M10.5 5.5V3A1.5 1.5 0 009 1.5h-6A1.5 1.5 0 001.5 3v6A1.5 1.5 0 003 10.5h2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  Copy
+                </button>
+                <button class="viewer-btn" id="viewer-download" title="Download .sh file" aria-label="Download script file">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 2v8M5 7.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 11.5v1A1.5 1.5 0 003.5 14h9a1.5 1.5 0 001.5-1.5v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  Download
+                </button>
               </div>
             </div>
             <div class="viewer-scroll">
-              <pre class="viewer-pre"><code class="language-bash hljs" id="viewer-code">Loading...</code></pre>
+              <div class="viewer-code-wrap" id="viewer-code-wrap">
+                <div class="viewer-loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+              </div>
             </div>
             <div class="viewer-footer">
+              <p class="viewer-desc" id="viewer-desc"></p>
               <div class="viewer-tags" id="viewer-tags"></div>
             </div>
           </div>
@@ -940,6 +959,26 @@ MACs \
               <option value="10">Turbo 10×</option>
               <option value="999">Instant</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Deployment progress bar -->
+        <div class="pg-progress-wrap" id="pg-progress-wrap">
+          <div class="pg-progress-top">
+            <span class="pg-progress-label" id="pg-progress-label">Ready — configure inputs and click Run</span>
+            <span class="pg-progress-pct" id="pg-progress-pct">0 / 7</span>
+          </div>
+          <div class="pg-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" id="pg-progress-track">
+            <div class="pg-progress-bar" id="pg-progress-bar"></div>
+          </div>
+          <div class="pg-progress-steps">
+            <span class="pg-step" data-step="01">01</span>
+            <span class="pg-step" data-step="02">02</span>
+            <span class="pg-step" data-step="03">03</span>
+            <span class="pg-step" data-step="04">04</span>
+            <span class="pg-step" data-step="05">05</span>
+            <span class="pg-step" data-step="06">06</span>
+            <span class="pg-step" data-step="07">07</span>
           </div>
         </div>
 
