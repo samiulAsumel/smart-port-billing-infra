@@ -38,6 +38,7 @@
         <a class="nav-link" href="#skills">Skills</a>
         <a class="nav-link" href="#security">Security</a>
         <a class="nav-link" href="#pipeline">Pipeline</a>
+        <a class="nav-link" href="#playground">Playground</a>
       </nav>
       <div class="header-right">
         <div class="header-status">
@@ -903,6 +904,86 @@ MACs \
       </div>
     </section>
 
+    <!-- ════════════════════════════ PLAYGROUND ══════════════════════════════ -->
+    <section id="playground" class="section">
+      <div class="section-inner pg-section-inner">
+        <div class="section-header">
+          <div class="section-label">07 / PLAYGROUND</div>
+          <h2 class="section-title">Interactive Deployment Runner</h2>
+          <p class="section-desc">Configure and simulate running all 7 infrastructure scripts — real RHEL 9 output, live system state, fully in-browser.</p>
+        </div>
+
+        <!-- Config bar -->
+        <div class="pg-config-bar">
+          <div class="pg-config-field">
+            <label class="pg-label" for="pg-device">LVM Block Device</label>
+            <input class="pg-input" type="text" id="pg-device" value="/dev/sdb" spellcheck="false" />
+          </div>
+          <div class="pg-config-field">
+            <label class="pg-label" for="pg-admin-cidr">Admin CIDR</label>
+            <input class="pg-input" type="text" id="pg-admin-cidr" value="192.168.10.0/24" spellcheck="false" />
+          </div>
+          <div class="pg-config-field">
+            <label class="pg-label" for="pg-billing-cidr">Billing LAN</label>
+            <input class="pg-input" type="text" id="pg-billing-cidr" value="10.10.0.0/16" spellcheck="false" />
+          </div>
+          <div class="pg-config-field pg-config-narrow">
+            <label class="pg-label" for="pg-ssh-port">SSH Port</label>
+            <input class="pg-input" type="number" id="pg-ssh-port" value="2222" min="1024" max="65535" />
+          </div>
+          <div class="pg-config-field pg-config-narrow">
+            <label class="pg-label" for="pg-speed">Speed</label>
+            <select class="pg-input pg-select" id="pg-speed">
+              <option value="0.5">Slow 0.5×</option>
+              <option value="1" selected>Normal 1×</option>
+              <option value="3">Fast 3×</option>
+              <option value="10">Turbo 10×</option>
+              <option value="999">Instant</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Main 3-column layout -->
+        <div class="pg-layout">
+
+          <!-- Left: Script list -->
+          <div class="pg-scripts-panel">
+            <div class="pg-panel-header">SCRIPTS</div>
+            <div class="pg-scripts-list" id="pg-scripts-list"></div>
+            <div class="pg-run-controls">
+              <button class="pg-btn-primary" id="pg-run-all">▶ Run Full Deployment</button>
+              <button class="pg-btn-ghost"    id="pg-reset">↺ Reset</button>
+            </div>
+          </div>
+
+          <!-- Center: Terminal -->
+          <div class="pg-terminal-col">
+            <div class="pg-term-header">
+              <div class="panel-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="pg-term-title" id="pg-term-title">portadmin@rhel9:~</span>
+              <div class="pg-term-actions">
+                <button class="pg-ctrl-btn" id="pg-pause">⏸ Pause</button>
+                <button class="pg-ctrl-btn" id="pg-clear">Clear</button>
+              </div>
+            </div>
+            <div class="pg-terminal" id="pg-terminal">
+              <div class="pg-terminal-placeholder">
+                Configure parameters above, select a script and click <strong>Run</strong>,<br/>
+                or click <strong>▶ Run Full Deployment</strong> to simulate the complete RHEL 9 infrastructure setup.
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: System state -->
+          <div class="pg-state-col">
+            <div class="pg-panel-header">SYSTEM STATE</div>
+            <div class="pg-state-body" id="pg-state-body"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <!-- ════════════════════════════ FOOTER ══════════════════════════════════ -->
     <footer id="site-footer">
       <div class="footer-inner">
@@ -927,5 +1008,6 @@ MACs \
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="main.js"></script>
+    <script src="playground.js"></script>
   </body>
 </html>
