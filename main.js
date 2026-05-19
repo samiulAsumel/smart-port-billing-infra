@@ -132,12 +132,21 @@ runTermSequence();
 // ══════════════════════════════════════════════════════════════════════════════
 // SCRIPT EXPLORER
 // ══════════════════════════════════════════════════════════════════════════════
+
+// Use embedded content from scripts-data.js (works without a web server).
+// Falls back to fetch() if SCRIPT_CONTENT is not available (e.g. GitHub Pages CDN).
 const scriptCache = new Map();
 
-async function loadScript(filename, idx) {
-  if (scriptCache.has(filename)) {
-    return scriptCache.get(filename);
+async function loadScript(filename) {
+  if (scriptCache.has(filename)) return scriptCache.get(filename);
+
+  // Prefer embedded content — instant, no network, works file://
+  if (typeof SCRIPT_CONTENT !== 'undefined' && SCRIPT_CONTENT[filename]) {
+    scriptCache.set(filename, SCRIPT_CONTENT[filename]);
+    return SCRIPT_CONTENT[filename];
   }
+
+  // Fallback: try fetch (works on GitHub Pages / Vercel)
   try {
     const res = await fetch(`./scripts/${filename}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -145,7 +154,7 @@ async function loadScript(filename, idx) {
     scriptCache.set(filename, text);
     return text;
   } catch {
-    return `# Could not load ${filename}\n# Serving from local filesystem — open via a web server or GitHub Pages.`;
+    return `# ${filename}\n# (Could not load — open via GitHub Pages or a local web server)`;
   }
 }
 
@@ -155,7 +164,7 @@ async function showScript(filename, idx) {
   viewerFile.textContent = filename;
   viewerCode.textContent = 'Loading...';
 
-  const code = await loadScript(filename, idx);
+  const code = await loadScript(filename);
   viewerCode.className = 'language-bash hljs';
   viewerCode.textContent = code;
 
