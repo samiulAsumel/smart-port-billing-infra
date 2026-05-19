@@ -982,7 +982,8 @@ function updateRunBtn(isRunning) {
 function updatePauseBtn() {
   const btn = document.getElementById('pg-pause');
   if (!btn) return;
-  btn.textContent = paused ? '▶ Resume' : '⏸ Pause';
+  btn.textContent  = paused ? '▶ Resume' : '⏸ Pause';
+  btn.disabled     = !running;
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -1025,3 +1026,4 @@ document.getElementById('pg-clear')?.addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════════════════
 buildScriptList();
 renderState();
+updatePauseBtn(); // initialise disabled state

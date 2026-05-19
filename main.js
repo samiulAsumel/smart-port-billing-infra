@@ -306,15 +306,6 @@ document.querySelectorAll('.sec-tab').forEach(tab => {
 // ════════════════════════════════════════════════════════════════════════
 // SCROLL REVEAL
 // ════════════════════════════════════════════════════════════════════════
-new IntersectionObserver((entries) => {
-  entries.forEach((entry, i) => {
-    if (entry.isIntersecting) {
-      setTimeout(() => entry.target.classList.add('visible'), i * 75);
-    }
-  });
-}, { threshold: 0.1 })
-.observe.bind(null) // placeholder — real attachment below
-
 const revealObs = new IntersectionObserver(entries => {
   entries.forEach((e, i) => {
     if (e.isIntersecting) {
@@ -351,16 +342,6 @@ function animateCounter(el, target, duration = 1200) {
   };
   requestAnimationFrame(tick);
 }
-new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      const n = parseInt(e.target.dataset.count, 10);
-      if (!isNaN(n)) animateCounter(e.target, n);
-    }
-  });
-}, { threshold: 0.5 })
-.observe; // — handled below
-
 const ctrObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
@@ -373,19 +354,10 @@ const ctrObs = new IntersectionObserver(entries => {
 document.querySelectorAll('[data-count]').forEach(el => ctrObs.observe(el));
 
 // ════════════════════════════════════════════════════════════════════════
-// HEADER — active nav link + scroll class
+// HEADER — active nav link on scroll + scrolled shadow
 // ════════════════════════════════════════════════════════════════════════
 const navLinks = document.querySelectorAll('.nav-link');
 const header   = document.getElementById('site-header');
-
-new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${e.target.id}`));
-    }
-  });
-}, { rootMargin: '-60px 0px -50% 0px' })
-.observe; // — handled below
 
 const secObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
@@ -401,12 +373,6 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 // ════════════════════════════════════════════════════════════════════════
-// STATS BAR MARQUEE — clone for seamless loop
-// ════════════════════════════════════════════════════════════════════════
-const statsInner = document.querySelector('.stats-inner');
-if (statsInner) statsInner.parentNode.appendChild(statsInner.cloneNode(true));
-
-// ════════════════════════════════════════════════════════════════════════
 // ARCHITECTURE SVG — native title tooltips
 // ════════════════════════════════════════════════════════════════════════
 document.querySelectorAll('.arch-node[data-tip]').forEach(node => {
@@ -416,10 +382,9 @@ document.querySelectorAll('.arch-node[data-tip]').forEach(node => {
 });
 
 // ════════════════════════════════════════════════════════════════════════
-// HIGHLIGHT.JS — static security code blocks
+// HIGHLIGHT.JS — security section static code blocks
+// Scripts are at end of <body>, so DOM is ready — no DOMContentLoaded needed
 // ════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof hljs !== 'undefined') {
-    document.querySelectorAll('.sec-code-wrap code').forEach(b => hljs.highlightElement(b));
-  }
-});
+if (typeof hljs !== 'undefined') {
+  document.querySelectorAll('.sec-code-wrap code').forEach(b => hljs.highlightElement(b));
+}

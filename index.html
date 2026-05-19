@@ -19,6 +19,8 @@
   </head>
   <body>
 
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
     <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
     <header id="site-header">
       <div class="header-brand">
@@ -53,6 +55,8 @@
         </a>
       </div>
     </header>
+
+    <main id="main-content">
 
     <!-- ═══════════════════════════════ HERO ══════════════════════════════════ -->
     <section id="hero">
@@ -161,32 +165,52 @@
     </section>
 
     <!-- ═══════════════════════════════ STATS BAR ═════════════════════════════ -->
-    <div id="stats-bar">
-      <div class="stats-inner">
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
-          7 Production Scripts
+    <div id="stats-bar" aria-label="Infrastructure stats" aria-hidden="true">
+      <!-- Left anchor -->
+      <div class="sb-anchor sb-anchor-left">
+        <span class="sb-live-dot" aria-hidden="true"></span>
+        <span class="sb-live-label">LIVE</span>
+      </div>
+
+      <!-- Scrolling track -->
+      <div class="sb-track-wrap">
+        <div class="sb-fade sb-fade-left"  aria-hidden="true"></div>
+        <div class="sb-track" aria-hidden="true">
+          <!-- Original set -->
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>7 Production Scripts</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>RHCSA EX200 Aligned</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-orange"></span>SELinux Enforcing Mode</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-orange"></span>firewalld Rich Rules</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-purple"></span>LVM + XFS Filesystems</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>Podman Rootless Containers</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-amber"></span>Systemd Timers + Services</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>100% Idempotent Execution</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>set -euo pipefail · ERR trap</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-purple"></span>POSIX ACLs + Default Inheritance</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-amber"></span>Daily Backup · 30-day Retention</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>SSH Port 2222 · Key-Only Auth</div>
+          <!-- Duplicate for seamless loop -->
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>7 Production Scripts</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>RHCSA EX200 Aligned</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-orange"></span>SELinux Enforcing Mode</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-orange"></span>firewalld Rich Rules</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-purple"></span>LVM + XFS Filesystems</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>Podman Rootless Containers</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-amber"></span>Systemd Timers + Services</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>100% Idempotent Execution</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-cyan"></span>set -euo pipefail · ERR trap</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-purple"></span>POSIX ACLs + Default Inheritance</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-amber"></span>Daily Backup · 30-day Retention</div>
+          <div class="sb-item"><span class="sb-dot sb-dot-green"></span>SSH Port 2222 · Key-Only Auth</div>
         </div>
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 7l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-          RHCSA EX200 Aligned
-        </div>
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1L10 6H15L11 9L13 14L8 11L3 14L5 9L1 6H6L8 1Z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
-          set -euo pipefail · ERR trap
-        </div>
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
-          LVM + XFS + SELinux
-        </div>
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
-          Podman · Nginx · Bash
-        </div>
-        <div class="stat-pill">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13 5L7 11L3 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-          Idempotent Execution
-        </div>
+        <div class="sb-fade sb-fade-right" aria-hidden="true"></div>
+      </div>
+
+      <!-- Right anchor -->
+      <div class="sb-anchor sb-anchor-right">
+        <span class="sb-version">RHEL&nbsp;9</span>
+        <span class="sb-version-sep" aria-hidden="true">·</span>
+        <span class="sb-version">EX200</span>
       </div>
     </div>
 
@@ -1023,6 +1047,8 @@ MACs \
       </div>
     </section>
 
+    </main>
+
     <!-- ════════════════════════════ FOOTER ══════════════════════════════════ -->
     <footer id="site-footer">
       <div class="footer-inner">
@@ -1045,9 +1071,9 @@ MACs \
       </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="scripts-data.js"></script>
-    <script src="main.js"></script>
-    <script src="playground.js"></script>
+    <script src="main.js" defer></script>
+    <script src="playground.js" defer></script>
   </body>
 </html>
