@@ -1,44 +1,65 @@
 #!/usr/bin/env bash
 # Smart Port Billing Infrastructure — Log Monitoring & Alerting
 # RHCSA Skills: journalctl, rsyslog, logrotate, Systemd Journal Filtering
-# Run as root on RHEL 9
+# Run as root on RHEL 9 | Pass --dry-run to preview without making changes
 set -euo pipefail
 trap 'echo "[ERROR] Line ${LINENO}: ${BASH_COMMAND}" >&2; exit 1' ERR
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'
-YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
+YELLOW='\033[1;33m'; BOLD='\033[1m'; MAGENTA='\033[0;35m'; RESET='\033[0m'
 
 log()  { echo -e "${CYAN}[$(date '+%H:%M:%S')] INFO${RESET}  $*"; }
 ok()   { echo -e "${GREEN}[$(date '+%H:%M:%S')]  OK  ${RESET}  $*"; }
 warn() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] WARN${RESET}  $*"; }
 die()  { echo -e "${RED}[$(date '+%H:%M:%S')] FAIL${RESET}  $*" >&2; exit 1; }
+dry()  { echo -e "${MAGENTA}[DRY-RUN]${RESET}  $*"; }
+
+# ── Dry-run mode ──────────────────────────────────────────────────────────────
+DRY_RUN=false
+for _a in "$@"; do [[ "$_a" == "--dry-run" ]] && DRY_RUN=true; done
+
+run() {
+    if $DRY_RUN; then dry "Would run: $*"; else "$@"; fi
+}
+
+$DRY_RUN && {
+    echo -e "\n${MAGENTA}${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${MAGENTA}${BOLD}║  DRY-RUN MODE — no changes will be made  ║${RESET}"
+    echo -e "${MAGENTA}${BOLD}╚══════════════════════════════════════════╝${RESET}\n"
+}
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 APP_NAME="portbill"
-ALERT_EMAIL="portadmin@portbill.local"     # Replace with real admin email
+ALERT_EMAIL="portadmin@portbill.local"
 LOG_DIR="/srv/portbill/logs"
 APP_LOG="${LOG_DIR}/app.log"
-ERROR_LOG="${LOG_DIR}/error.log"
 AUDIT_LOG="${LOG_DIR}/billing-audit.log"
 MONITOR_SCRIPT="/usr/local/bin/portbill-logmonitor"
 LOGROTATE_CONF="/etc/logrotate.d/${APP_NAME}"
 RSYSLOG_CONF="/etc/rsyslog.d/10-${APP_NAME}.conf"
 
 # ── Pre-flight ────────────────────────────────────────────────────────────────
-[[ $EUID -ne 0 ]] && die "Must be run as root."
-[[ -d "$LOG_DIR" ]] || die "Log directory missing — run 02_storage_lvm.sh first"
+[[ $EUID -ne 0 ]]    && ! $DRY_RUN && die "Must be run as root."
+[[ -d "$LOG_DIR" ]]  || $DRY_RUN   || die "Log directory missing — run 02_storage_lvm.sh first"
+$DRY_RUN && dry "Would verify: $LOG_DIR exists"
 
 # ════════════════════════════════════════════════════════════════════════════════
-# PART 1 — RSYSLOG: Route portbill logs to dedicated files
+# PART 1 — RSYSLOG
 # ════════════════════════════════════════════════════════════════════════════════
 log "Configuring rsyslog for $APP_NAME..."
-cat > "$RSYSLOG_CONF" <<EOF
-# Port Billing — rsyslog routing rules
-# Capture all portbill container/service messages to dedicated log files
 
+if $DRY_RUN; then
+    dry "Would write: $RSYSLOG_CONF"
+    dry "  Route: programname=='$APP_NAME'  → $APP_LOG  + $AUDIT_LOG"
+    dry "  Route: programname=='nginx' && portbill → $APP_LOG"
+    dry "  Route: audit AVC denials → /var/log/portbill-avc.log"
+    dry "Would run: rsyslogd -N1 -f $RSYSLOG_CONF  (validate)"
+    dry "Would run: systemctl restart rsyslog"
+else
+    cat > "$RSYSLOG_CONF" <<EOF
+# Port Billing — rsyslog routing rules
 \$template PortbillFormat,"%TIMESTAMP% %HOSTNAME% %syslogseverity-text% %msg%\\n"
 
-# Match journal messages from portbill service
 if \$programname == '${APP_NAME}' then {
     action(type="omfile" file="${APP_LOG}"    template="PortbillFormat")
     action(type="omfile" file="${AUDIT_LOG}"  template="PortbillFormat"
@@ -46,29 +67,33 @@ if \$programname == '${APP_NAME}' then {
     stop
 }
 
-# Route nginx portbill access/error to app logs
 if \$programname == 'nginx' and \$msg contains 'portbill' then {
     action(type="omfile" file="${APP_LOG}" template="PortbillFormat")
     stop
 }
 
-# SELinux AVC denials — separate file for security review
 if \$programname == 'audit' and \$msg contains 'avc' then {
     action(type="omfile" file="/var/log/portbill-avc.log" template="PortbillFormat")
 }
 EOF
-chmod 0644 "$RSYSLOG_CONF"
-
-# Validate rsyslog config before restart
-rsyslogd -N1 -f "$RSYSLOG_CONF" 2>&1 | grep -v "^$" || warn "rsyslog validation warnings above"
-systemctl restart rsyslog
+    chmod 0644 "$RSYSLOG_CONF"
+    rsyslogd -N1 -f "$RSYSLOG_CONF" 2>&1 | grep -v "^$" || warn "rsyslog validation warnings above"
+    systemctl restart rsyslog
+fi
 ok "rsyslog configured: $RSYSLOG_CONF"
 
 # ════════════════════════════════════════════════════════════════════════════════
-# PART 2 — LOGROTATE: Manage log file size and retention
+# PART 2 — LOGROTATE
 # ════════════════════════════════════════════════════════════════════════════════
 log "Configuring logrotate for $APP_NAME..."
-cat > "$LOGROTATE_CONF" <<EOF
+
+if $DRY_RUN; then
+    dry "Would write: $LOGROTATE_CONF"
+    dry "  ${LOG_DIR}/*.log: daily rotate=90 size=100M compress delaycompress"
+    dry "  /var/log/nginx/portbill.*.log: daily rotate=30 compress"
+    dry "Would run: logrotate --debug $LOGROTATE_CONF  (validate)"
+else
+    cat > "$LOGROTATE_CONF" <<EOF
 # Port Billing — logrotate configuration
 ${LOG_DIR}/*.log {
     daily
@@ -84,9 +109,7 @@ ${LOG_DIR}/*.log {
     create 0640 root billing-ops
     sharedscripts
     postrotate
-        # Reload rsyslog to pick up rotated file handles
         /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || true
-        # Signal portbill to reopen log file descriptors
         /usr/bin/systemctl reload ${APP_NAME} > /dev/null 2>&1 || true
     endscript
 }
@@ -103,17 +126,23 @@ ${LOG_DIR}/*.log {
     endscript
 }
 EOF
-chmod 0644 "$LOGROTATE_CONF"
-
-# Test logrotate config
-logrotate --debug "$LOGROTATE_CONF" 2>&1 | tail -10
+    chmod 0644 "$LOGROTATE_CONF"
+    logrotate --debug "$LOGROTATE_CONF" 2>&1 | tail -10
+fi
 ok "logrotate configured: $LOGROTATE_CONF"
 
 # ════════════════════════════════════════════════════════════════════════════════
-# PART 3 — LOG MONITOR SCRIPT: Watch for critical billing events
+# PART 3 — LOG MONITOR SCRIPT
 # ════════════════════════════════════════════════════════════════════════════════
 log "Creating log monitor: $MONITOR_SCRIPT"
-cat > "$MONITOR_SCRIPT" <<'MONITOR_EOF'
+
+if $DRY_RUN; then
+    dry "Would write: $MONITOR_SCRIPT"
+    dry "  Modes: watch (real-time tail) | summary (daily report) | check (health CI)"
+    dry "  Alert patterns: CRITICAL, ERROR, FATAL, OOM, AUDIT events"
+    dry "  Alert destinations: $ALERT_EMAIL + journalctl + /var/log/portbill-alerts.log"
+else
+    cat > "$MONITOR_SCRIPT" <<'MONITOR_EOF'
 #!/usr/bin/env bash
 # portbill-logmonitor — Real-time billing log monitor with alerting
 set -euo pipefail
@@ -125,7 +154,6 @@ ALERT_EMAIL="${ALERT_EMAIL:-portadmin@portbill.local}"
 ALERT_LOG="/var/log/portbill-alerts.log"
 SUMMARY_LOG="/var/log/portbill-daily-summary.log"
 
-# Alert patterns with severity and message
 declare -A ALERT_PATTERNS=(
     ["CRITICAL:database connection"]="CRIT: Database connectivity failure"
     ["ERROR:payment processing"]="ERR: Payment processor error"
@@ -141,25 +169,20 @@ send_alert() {
     local severity="$1" message="$2"
     local timestamp; timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] [$severity] $message" >> "$ALERT_LOG"
-
-    # Send email alert (requires mail/sendmail configured)
     if command -v mail &>/dev/null; then
         echo "$message" | mail -s "[PORTBILL $severity] Alert - $(hostname)" "$ALERT_EMAIL" 2>/dev/null || true
     fi
-
-    # Log to systemd journal with priority
     case "$severity" in
-        CRIT) logger -p user.crit  -t portbill-monitor "$message" ;;
-        ERR)  logger -p user.err   -t portbill-monitor "$message" ;;
+        CRIT) logger -p user.crit    -t portbill-monitor "$message" ;;
+        ERR)  logger -p user.err     -t portbill-monitor "$message" ;;
         SEC)  logger -p authpriv.crit -t portbill-monitor "$message" ;;
-        WARN) logger -p user.warning -t portbill-monitor "$message" ;;
+        WARN) logger -p user.warning  -t portbill-monitor "$message" ;;
     esac
 }
 
 generate_daily_summary() {
     local date_str; date_str=$(date '+%Y-%m-%d')
     local summary_file="${SUMMARY_LOG%.log}_${date_str}.log"
-
     {
         echo "=== Port Billing Daily Log Summary: $date_str ==="
         echo ""
@@ -183,10 +206,8 @@ generate_daily_summary() {
     cat "$summary_file"
 }
 
-# ── Main: choose mode from argument ──────────────────────────────────────────
 case "${1:-watch}" in
     watch)
-        # Tail journals for portbill service — real-time monitoring
         echo "[$(date)] Starting real-time log monitor for ${APP_NAME}..."
         journalctl -u "$APP_NAME" -f --no-pager --output=short-iso 2>/dev/null | \
         while IFS= read -r line; do
@@ -202,7 +223,6 @@ case "${1:-watch}" in
         generate_daily_summary
         ;;
     check)
-        # Quick health check — exit 1 if critical errors in last hour
         error_count=$(journalctl -u "$APP_NAME" --since "1 hour ago" \
             --no-pager -p err 2>/dev/null | grep -c "ERROR\|FATAL\|CRIT" || true)
         echo "Errors in last 1h: $error_count"
@@ -214,13 +234,21 @@ case "${1:-watch}" in
         ;;
 esac
 MONITOR_EOF
+    chmod 0750 "$MONITOR_SCRIPT"
+    chown root:billing-admin "$MONITOR_SCRIPT"
+fi
+ok "Log monitor: $MONITOR_SCRIPT"
 
-chmod 0750 "$MONITOR_SCRIPT"
-chown root:billing-admin "$MONITOR_SCRIPT"
-ok "Log monitor script: $MONITOR_SCRIPT"
-
-# ── Systemd Service for Continuous Log Monitoring ────────────────────────────
-cat > "/etc/systemd/system/portbill-logmonitor.service" <<EOF
+# ── Systemd Units ─────────────────────────────────────────────────────────────
+if $DRY_RUN; then
+    dry "Would write: /etc/systemd/system/portbill-logmonitor.service"
+    dry "  BindsTo=portbill.service — monitor stops when app stops"
+    dry "Would write: /etc/systemd/system/portbill-summary.{service,timer}"
+    dry "  OnCalendar=*-*-* 07:00:00 — daily summary at 07:00"
+    dry "Would run: systemctl daemon-reload"
+    dry "Would run: systemctl enable --now portbill-logmonitor portbill-summary.timer"
+else
+    cat > "/etc/systemd/system/portbill-logmonitor.service" <<EOF
 [Unit]
 Description=Port Billing Log Monitor
 After=portbill.service rsyslog.service
@@ -239,8 +267,7 @@ SyslogIdentifier=portbill-monitor
 WantedBy=multi-user.target
 EOF
 
-# Systemd timer for daily summary
-cat > "/etc/systemd/system/portbill-summary.timer" <<EOF
+    cat > "/etc/systemd/system/portbill-summary.timer" <<EOF
 [Unit]
 Description=Port Billing Daily Log Summary
 
@@ -252,7 +279,7 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-cat > "/etc/systemd/system/portbill-summary.service" <<EOF
+    cat > "/etc/systemd/system/portbill-summary.service" <<EOF
 [Unit]
 Description=Port Billing Daily Log Summary
 
@@ -262,15 +289,21 @@ ExecStart=${MONITOR_SCRIPT} summary
 StandardOutput=journal
 EOF
 
-systemctl daemon-reload
-systemctl enable --now portbill-logmonitor
-systemctl enable --now portbill-summary.timer
+    systemctl daemon-reload
+    systemctl enable --now portbill-logmonitor
+    systemctl enable --now portbill-summary.timer
+fi
 ok "Log monitor service and daily summary timer enabled."
 
-# ── Journal Persistence Configuration ────────────────────────────────────────
-mkdir -p /var/log/journal
-systemd-tmpfiles --create --prefix /var/log/journal
-journalctl --verify 2>/dev/null || warn "Journal verify returned warnings — may be normal"
+# ── Journal Persistence ───────────────────────────────────────────────────────
+run mkdir -p /var/log/journal
+if $DRY_RUN; then
+    dry "systemd-tmpfiles --create --prefix /var/log/journal"
+    dry "journalctl --verify"
+else
+    systemd-tmpfiles --create --prefix /var/log/journal
+    journalctl --verify 2>/dev/null || warn "Journal verify returned warnings — may be normal"
+fi
 ok "Systemd journal set to persistent storage"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
@@ -285,9 +318,10 @@ echo -e "  Log retention    : 90 days (100MB rotate threshold)"
 echo -e "  Alert email      : $ALERT_EMAIL"
 echo ""
 echo -e "  ${BOLD}Useful commands:${RESET}"
-echo -e "  journalctl -u portbill -f                   # Follow app logs"
+echo -e "  journalctl -u portbill -f                    # Follow app logs"
 echo -e "  journalctl -u portbill -p err --since today  # Today's errors"
 echo -e "  $MONITOR_SCRIPT summary                      # Daily report"
 echo -e "  $MONITOR_SCRIPT check                        # Health check (CI/cron)"
+$DRY_RUN && echo -e "\n  ${MAGENTA}No system changes were made.${RESET}"
 echo ""
 ok "Log monitoring setup complete."

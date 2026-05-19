@@ -642,6 +642,7 @@ code, pre, .font-mono { font-family: var(--font-mono); }
   flex-direction: column;
   background: var(--bg-deep);
   min-height: 0;
+  min-width: 0;
 }
 .viewer-header {
   display: flex;
@@ -650,7 +651,7 @@ code, pre, .font-mono { font-family: var(--font-mono); }
   padding: 10px 16px;
   border-bottom: 1px solid var(--border-dim);
   background: var(--bg-panel);
-  flex-wrap: wrap;
+  min-width: 0;
 }
 .viewer-file {
   display: flex;
@@ -661,11 +662,14 @@ code, pre, .font-mono { font-family: var(--font-mono); }
   color: var(--text-primary);
   flex: 1;
   min-width: 0;
+}
+.viewer-file svg { color: var(--cyan); flex-shrink: 0; }
+#viewer-filename {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
-.viewer-file svg { color: var(--cyan); flex-shrink: 0; }
 .viewer-meta { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .viewer-lang {
   font-family: var(--font-mono);

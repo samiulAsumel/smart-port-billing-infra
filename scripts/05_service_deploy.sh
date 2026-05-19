@@ -1,17 +1,32 @@
 #!/usr/bin/env bash
 # Smart Port Billing Infrastructure — Application Deployment
 # RHCSA Skills: Podman Container Management, Systemd Unit Files, Nginx Reverse Proxy
-# Run as root on RHEL 9
+# Run as root on RHEL 9 | Pass --dry-run to preview without making changes
 set -euo pipefail
 trap 'echo "[ERROR] Line ${LINENO}: ${BASH_COMMAND}" >&2; exit 1' ERR
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'
-YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
+YELLOW='\033[1;33m'; BOLD='\033[1m'; MAGENTA='\033[0;35m'; RESET='\033[0m'
 
 log()  { echo -e "${CYAN}[$(date '+%H:%M:%S')] INFO${RESET}  $*"; }
 ok()   { echo -e "${GREEN}[$(date '+%H:%M:%S')]  OK  ${RESET}  $*"; }
 warn() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] WARN${RESET}  $*"; }
 die()  { echo -e "${RED}[$(date '+%H:%M:%S')] FAIL${RESET}  $*" >&2; exit 1; }
+dry()  { echo -e "${MAGENTA}[DRY-RUN]${RESET}  $*"; }
+
+# ── Dry-run mode ──────────────────────────────────────────────────────────────
+DRY_RUN=false
+for _a in "$@"; do [[ "$_a" == "--dry-run" ]] && DRY_RUN=true; done
+
+run() {
+    if $DRY_RUN; then dry "Would run: $*"; else "$@"; fi
+}
+
+$DRY_RUN && {
+    echo -e "\n${MAGENTA}${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${MAGENTA}${BOLD}║  DRY-RUN MODE — no changes will be made  ║${RESET}"
+    echo -e "${MAGENTA}${BOLD}╚══════════════════════════════════════════╝${RESET}\n"
+}
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 APP_NAME="portbill"
@@ -23,24 +38,37 @@ APP_DATA_DIR="/srv/portbill/data"
 APP_LOGS_DIR="/srv/portbill/logs"
 SYSTEMD_UNIT="/etc/systemd/system/${APP_NAME}.service"
 NGINX_CONF="/etc/nginx/conf.d/${APP_NAME}.conf"
+SSL_DIR="/etc/nginx/ssl/portbill"
 
 # ── Pre-flight ────────────────────────────────────────────────────────────────
-[[ $EUID -ne 0 ]] && die "Must be run as root."
-command -v podman &>/dev/null  || die "Podman not found: dnf install -y podman"
-command -v nginx  &>/dev/null  || die "Nginx not found: dnf install -y nginx"
-[[ -d "$APP_DATA_DIR" ]]       || die "Data dir missing — run 02_storage_lvm.sh first"
+[[ $EUID -ne 0 ]] && ! $DRY_RUN && die "Must be run as root."
+if ! $DRY_RUN; then
+    command -v podman &>/dev/null  || die "Podman not found: dnf install -y podman"
+    command -v nginx  &>/dev/null  || die "Nginx not found: dnf install -y nginx"
+    [[ -d "$APP_DATA_DIR" ]]       || die "Data dir missing — run 02_storage_lvm.sh first"
+fi
 
 # ── Pull Container Image ──────────────────────────────────────────────────────
-log "Pulling container image: $APP_IMAGE"
-podman pull "$APP_IMAGE" || {
-    warn "Image pull failed — using local image if available"
-    podman image exists "$APP_IMAGE" || die "No local image found for $APP_IMAGE"
-}
+log "Container image: $APP_IMAGE"
+if $DRY_RUN; then
+    dry "Would run: podman pull $APP_IMAGE"
+else
+    podman pull "$APP_IMAGE" || {
+        warn "Image pull failed — using local image if available"
+        podman image exists "$APP_IMAGE" || die "No local image found for $APP_IMAGE"
+    }
+fi
 ok "Container image ready: $APP_IMAGE"
 
-# ── Create Systemd Unit for Podman Container ──────────────────────────────────
+# ── Systemd Unit ──────────────────────────────────────────────────────────────
 log "Creating systemd unit: $SYSTEMD_UNIT"
-cat > "$SYSTEMD_UNIT" <<EOF
+if $DRY_RUN; then
+    dry "Would write: $SYSTEMD_UNIT"
+    dry "  [Unit] After=network-online.target"
+    dry "  [Service] podman run --name $APP_NAME -p 127.0.0.1:${APP_PORT}:${APP_PORT}"
+    dry "  NoNewPrivileges=yes PrivateTmp=yes ProtectSystem=strict"
+else
+    cat > "$SYSTEMD_UNIT" <<EOF
 [Unit]
 Description=Smart Port Billing Application (Podman)
 Documentation=https://github.com/samiulAsumel/portbill
@@ -86,26 +114,37 @@ ExecStopPost=/usr/bin/podman rm --ignore ${APP_NAME}
 [Install]
 WantedBy=multi-user.target
 EOF
-chmod 0644 "$SYSTEMD_UNIT"
-ok "Systemd unit written: $SYSTEMD_UNIT"
+    chmod 0644 "$SYSTEMD_UNIT"
+fi
+ok "Systemd unit: $SYSTEMD_UNIT"
 
-# ── Nginx TLS Reverse Proxy Configuration ─────────────────────────────────────
-# Self-signed cert for demonstration (replace with Let's Encrypt in production)
-SSL_DIR="/etc/nginx/ssl/portbill"
-mkdir -p "$SSL_DIR"
-if [[ ! -f "$SSL_DIR/server.crt" ]]; then
-    openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
-        -keyout "$SSL_DIR/server.key" \
-        -out    "$SSL_DIR/server.crt" \
-        -subj "/C=BD/ST=Chittagong/O=Port Authority/CN=portbill.local" \
-        -quiet
-    chmod 0600 "$SSL_DIR/server.key"
-    ok "Self-signed TLS certificate generated: $SSL_DIR/"
+# ── TLS Certificate ───────────────────────────────────────────────────────────
+if $DRY_RUN; then
+    dry "Would create: $SSL_DIR/server.{key,crt}  (self-signed, RSA-4096, 365 days)"
     warn "PRODUCTION: Replace with a CA-signed cert (Let's Encrypt recommended)"
+else
+    mkdir -p "$SSL_DIR"
+    if [[ ! -f "$SSL_DIR/server.crt" ]]; then
+        openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
+            -keyout "$SSL_DIR/server.key" \
+            -out    "$SSL_DIR/server.crt" \
+            -subj "/C=BD/ST=Chittagong/O=Port Authority/CN=portbill.local" \
+            -quiet
+        chmod 0600 "$SSL_DIR/server.key"
+        ok "Self-signed TLS certificate generated: $SSL_DIR/"
+        warn "PRODUCTION: Replace with a CA-signed cert (Let's Encrypt recommended)"
+    fi
 fi
 
+# ── Nginx Configuration ───────────────────────────────────────────────────────
 log "Writing Nginx configuration: $NGINX_CONF"
-cat > "$NGINX_CONF" <<EOF
+if $DRY_RUN; then
+    dry "Would write: $NGINX_CONF"
+    dry "  server :${NGINX_HTTP_PORT} → 301 HTTPS redirect"
+    dry "  server :${NGINX_PORT} ssl http2 → proxy_pass http://127.0.0.1:${APP_PORT}"
+    dry "  HSTS, X-Frame-Options, X-Content-Type-Options, CSP headers"
+else
+    cat > "$NGINX_CONF" <<EOF
 # Port Billing — Nginx TLS Reverse Proxy
 upstream portbill_backend {
     server 127.0.0.1:${APP_PORT};
@@ -159,45 +198,59 @@ server {
     }
 }
 EOF
-ok "Nginx configuration written: $NGINX_CONF"
+fi
+ok "Nginx configuration: $NGINX_CONF"
 
-# ── SELinux: Allow Nginx to Proxy to App Port ─────────────────────────────────
-if command -v semanage &>/dev/null; then
+# ── SELinux Port Context ──────────────────────────────────────────────────────
+if $DRY_RUN; then
+    dry "semanage port --add --type http_port_t --proto tcp $APP_PORT"
+elif command -v semanage &>/dev/null; then
     semanage port --add --type http_port_t --proto tcp "$APP_PORT" 2>/dev/null || \
         warn "SELinux: port $APP_PORT may already be labelled http_port_t"
-    ok "SELinux: port $APP_PORT → http_port_t"
+fi
+ok "SELinux: port $APP_PORT → http_port_t"
+
+# ── Start Services ────────────────────────────────────────────────────────────
+if $DRY_RUN; then
+    dry "nginx -t  (validate config syntax)"
+    dry "systemctl daemon-reload"
+    dry "systemctl enable --now nginx"
+    dry "systemctl enable --now $APP_NAME"
+else
+    nginx -t || die "Nginx config syntax error — fix $NGINX_CONF before starting"
+    ok "Nginx configuration syntax valid."
+    systemctl daemon-reload
+    systemctl enable --now nginx
+    ok "Nginx enabled and started."
+    systemctl enable --now "$APP_NAME"
+    ok "portbill service enabled and started."
 fi
 
-# ── Validate and Start Services ───────────────────────────────────────────────
-nginx -t || die "Nginx config syntax error — fix $NGINX_CONF before starting"
-ok "Nginx configuration syntax valid."
-
-systemctl daemon-reload
-systemctl enable --now nginx
-ok "Nginx enabled and started."
-
-systemctl enable --now "$APP_NAME"
-ok "portbill service enabled and started."
-
 # ── Health Check ──────────────────────────────────────────────────────────────
-log "Waiting for application health check (max 60s)..."
-for i in $(seq 1 12); do
-    if curl -sf --max-time 5 "http://127.0.0.1:${APP_PORT}/health" &>/dev/null; then
-        ok "Health check passed on attempt $i"
-        break
-    fi
-    sleep 5
-    [[ $i -eq 12 ]] && warn "Health check did not pass — check: journalctl -u ${APP_NAME}"
-done
+if $DRY_RUN; then
+    dry "Would poll http://127.0.0.1:${APP_PORT}/health (max 60s, 12 attempts)"
+else
+    log "Waiting for application health check (max 60s)..."
+    for i in $(seq 1 12); do
+        if curl -sf --max-time 5 "http://127.0.0.1:${APP_PORT}/health" &>/dev/null; then
+            ok "Health check passed on attempt $i"
+            break
+        fi
+        sleep 5
+        [[ $i -eq 12 ]] && warn "Health check did not pass — check: journalctl -u ${APP_NAME}"
+    done
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}${CYAN}── Deployment Summary ──────────────────────${RESET}"
-systemctl --no-pager status "$APP_NAME" nginx | grep -E "Active:|Loaded:"
-echo ""
+if ! $DRY_RUN; then
+    systemctl --no-pager status "$APP_NAME" nginx | grep -E "Active:|Loaded:" || true
+fi
 echo -e "  App container    : ${APP_NAME} → 127.0.0.1:${APP_PORT}"
 echo -e "  Nginx proxy      : :${NGINX_HTTP_PORT} → :${NGINX_PORT} (TLS)"
 echo -e "  Data volume      : ${APP_DATA_DIR}"
 echo -e "  Logs             : ${APP_LOGS_DIR}"
 echo -e "  Systemd unit     : ${SYSTEMD_UNIT}"
+$DRY_RUN && echo -e "  ${MAGENTA}No system changes were made.${RESET}"
 echo ""
 ok "Deployment complete."
