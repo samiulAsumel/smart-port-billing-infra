@@ -1,0 +1,50 @@
+# Smart Port Billing Infrastructure — Hardened SSH Configuration
+# Applied by 04_ssh_hardening.sh | RHEL 9 OpenSSH 8.7+
+# Reference: NIST SP 800-123, CIS RHEL 9 Benchmark
+
+# ── Network ───────────────────────────────────────────────────────────────────
+Port                    2222
+AddressFamily           inet
+ListenAddress           0.0.0.0
+
+# ── Authentication ────────────────────────────────────────────────────────────
+PermitRootLogin                 no
+PubkeyAuthentication            yes
+AuthorizedKeysFile              .ssh/authorized_keys
+PasswordAuthentication          no
+PermitEmptyPasswords            no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication    no
+UsePAM                          yes
+
+# ── Access Control ────────────────────────────────────────────────────────────
+AllowGroups                     billing-admin
+
+# ── Connection Hardening ──────────────────────────────────────────────────────
+LoginGraceTime                  30
+MaxAuthTries                    3
+MaxSessions                     5
+MaxStartups                     5:30:10
+ClientAliveInterval             300
+ClientAliveCountMax             2
+
+# ── Feature Restrictions ──────────────────────────────────────────────────────
+X11Forwarding                   no
+AllowAgentForwarding            no
+AllowTcpForwarding              no
+PermitTunnel                    no
+GatewayPorts                    no
+PermitUserEnvironment           no
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+SyslogFacility                  AUTHPRIV
+LogLevel                        VERBOSE
+
+# ── Legal Banner ──────────────────────────────────────────────────────────────
+Banner                          /etc/ssh/billing-banner
+
+# ── Cryptography (FIPS-compatible) ───────────────────────────────────────────
+KexAlgorithms                   curve25519-sha256,diffie-hellman-group14-sha256
+HostKeyAlgorithms               ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+Ciphers                         chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
+MACs                            hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com

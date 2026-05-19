@@ -1,0 +1,51 @@
+# Smart Port Billing Infrastructure — Systemd Unit File
+# /etc/systemd/system/portbill.service
+# Manages portbill Podman container as a systemd service
+
+[Unit]
+Description=Smart Port Billing Application (Podman)
+Documentation=https://github.com/samiulAsumel/smart-port-billing-infra
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/srv/portbill
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+
+# Systemd hardening directives
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/portbill/data /srv/portbill/logs
+
+# Podman container lifecycle
+ExecStartPre=/usr/bin/podman stop  --ignore portbill 2>/dev/null || true
+ExecStartPre=/usr/bin/podman rm    --ignore portbill 2>/dev/null || true
+ExecStart=/usr/bin/podman run \
+    --name portbill \
+    --publish 127.0.0.1:3000:3000 \
+    --volume /srv/portbill/data:/app/data:Z \
+    --volume /srv/portbill/logs:/app/logs:Z \
+    --env NODE_ENV=production \
+    --env PORT=3000 \
+    --env LOG_DIR=/app/logs \
+    --read-only \
+    --security-opt no-new-privileges \
+    --health-cmd='curl -f http://localhost:3000/health || exit 1' \
+    --health-interval=30s \
+    --health-retries=3 \
+    ghcr.io/samiulAsumel/portbill:latest
+
+ExecStop=/usr/bin/podman stop portbill
+ExecStopPost=/usr/bin/podman rm --ignore portbill
+
+[Install]
+WantedBy=multi-user.target

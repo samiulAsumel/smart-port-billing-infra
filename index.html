@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Production-grade RHEL 9 enterprise infrastructure deployment for a port billing application — 7 hardened scripts covering LVM storage, SELinux, firewalld, SSH hardening, Podman, ACLs, and log monitoring." />
+    <meta name="theme-color" content="#060912" />
+    <meta property="og:title" content="Smart Port Billing Infrastructure — RHEL 9 Enterprise Deployment" />
+    <meta property="og:description" content="7 production RHCSA scripts. LVM, SELinux, firewalld, SSH hardening, Podman containers, ACLs, and automated log monitoring on RHEL 9." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Smart Port Billing Infrastructure — RHEL 9</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/ocean.min.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+
+    <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+    <header id="site-header">
+      <div class="header-brand">
+        <svg class="brand-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="3" fill="currentColor"/>
+          <line x1="10" y1="2" x2="10" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="10" y1="13" x2="10" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="2" y1="10" x2="7" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="13" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">PORT<span class="brand-sep">/</span>INFRA</span>
+      </div>
+      <nav class="header-nav" aria-label="Main navigation">
+        <a class="nav-link" href="#architecture">Architecture</a>
+        <a class="nav-link" href="#scripts">Scripts</a>
+        <a class="nav-link" href="#skills">Skills</a>
+        <a class="nav-link" href="#security">Security</a>
+        <a class="nav-link" href="#pipeline">Pipeline</a>
+      </nav>
+      <div class="header-right">
+        <div class="header-status">
+          <span class="status-dot status-green"></span>
+          <span class="status-label">7 Scripts</span>
+        </div>
+        <a class="gh-btn" href="https://github.com/samiulAsumel/smart-port-billing-infra" target="_blank" rel="noopener" aria-label="View on GitHub">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════ HERO ══════════════════════════════════ -->
+    <section id="hero">
+      <div class="hero-grid-overlay" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="hero-content">
+          <div class="hero-eyebrow">
+            <span class="eyebrow-badge badge-orange">RHCSA · Enterprise Linux</span>
+            <span class="eyebrow-badge badge-cyan">RHEL 9</span>
+            <span class="eyebrow-badge badge-green">ShellCheck Verified</span>
+          </div>
+          <h1 class="hero-headline">
+            SMART PORT<br/>
+            BILLING<br/>
+            <span class="headline-accent">INFRASTRUCTURE</span>
+          </h1>
+          <p class="hero-sub">
+            Production-grade RHEL 9 deployment for maritime port billing operations —
+            secure, automated, and continuously available.
+          </p>
+          <div class="hero-meta">
+            <div class="meta-item">
+              <span class="meta-val" data-count="7">7</span>
+              <span class="meta-label">Hardened Scripts</span>
+            </div>
+            <div class="meta-divider" aria-hidden="true"></div>
+            <div class="meta-item">
+              <span class="meta-val" data-count="8">8</span>
+              <span class="meta-label">RHCSA Skills</span>
+            </div>
+            <div class="meta-divider" aria-hidden="true"></div>
+            <div class="meta-item">
+              <span class="meta-val" data-count="30">30</span>
+              <span class="meta-label">GB LVM Storage</span>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <a class="btn-primary" href="#scripts">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+              View Scripts
+            </a>
+            <a class="btn-ghost" href="#architecture">Explore Architecture</a>
+          </div>
+        </div>
+
+        <!-- Live System Status Panel -->
+        <div class="hero-panel">
+          <div class="panel-header">
+            <div class="panel-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="panel-title">portbill@rhel9 — system status</span>
+          </div>
+          <div class="panel-body">
+            <div class="status-line" id="terminal-output">
+              <div class="term-prompt"><span class="prompt-host">portadmin@rhel9</span><span class="prompt-sep">:</span><span class="prompt-path">~</span><span class="prompt-dollar">$</span> <span class="prompt-cmd" id="term-cmd"></span></div>
+              <div class="term-lines" id="term-lines"></div>
+            </div>
+            <div class="service-status-grid">
+              <div class="svc-row">
+                <span class="svc-dot svc-active"></span>
+                <span class="svc-name">portbill.service</span>
+                <span class="svc-state">active (running)</span>
+                <span class="svc-uptime">12d 4h</span>
+              </div>
+              <div class="svc-row">
+                <span class="svc-dot svc-active"></span>
+                <span class="svc-name">nginx.service</span>
+                <span class="svc-state">active (running)</span>
+                <span class="svc-uptime">12d 4h</span>
+              </div>
+              <div class="svc-row">
+                <span class="svc-dot svc-active"></span>
+                <span class="svc-name">firewalld.service</span>
+                <span class="svc-state">active (running)</span>
+                <span class="svc-uptime">12d 4h</span>
+              </div>
+              <div class="svc-row">
+                <span class="svc-dot svc-active"></span>
+                <span class="svc-name">sshd.service</span>
+                <span class="svc-state">active (running)</span>
+                <span class="svc-uptime">12d 4h</span>
+              </div>
+              <div class="svc-row">
+                <span class="svc-dot svc-timer"></span>
+                <span class="svc-name">portbill-backup.timer</span>
+                <span class="svc-state">active (waiting)</span>
+                <span class="svc-uptime">→ 02:00</span>
+              </div>
+              <div class="svc-row">
+                <span class="svc-dot svc-selinux"></span>
+                <span class="svc-name">SELinux</span>
+                <span class="svc-state">enforcing</span>
+                <span class="svc-uptime">targeted</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll indicator -->
+      <div class="scroll-hint" aria-hidden="true">
+        <div class="scroll-line"></div>
+        <span>SCROLL</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════ STATS BAR ═════════════════════════════ -->
+    <div id="stats-bar">
+      <div class="stats-inner">
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+          7 Production Scripts
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 7l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          RHCSA EX200 Aligned
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1L10 6H15L11 9L13 14L8 11L3 14L5 9L1 6H6L8 1Z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+          set -euo pipefail · ERR trap
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+          LVM + XFS + SELinux
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+          Podman · Nginx · Bash
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13 5L7 11L3 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          Idempotent Execution
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════ ARCHITECTURE ═════════════════════════════ -->
+    <section id="architecture" class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">01 / ARCHITECTURE</div>
+          <h2 class="section-title">Infrastructure Topology</h2>
+          <p class="section-desc">End-to-end deployment stack — from the network perimeter to persistent LVM storage, every layer hardened and automated.</p>
+        </div>
+        <div class="arch-diagram-wrap">
+          <svg class="arch-svg" viewBox="0 0 900 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Infrastructure topology diagram">
+            <!-- Grid background lines -->
+            <defs>
+              <pattern id="arch-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1c2a45" stroke-width="0.5"/>
+              </pattern>
+              <marker id="arrow-cyan" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#00d4ff"/>
+              </marker>
+              <marker id="arrow-orange" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#ff6435"/>
+              </marker>
+              <marker id="arrow-green" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#22c55e"/>
+              </marker>
+              <filter id="glow-cyan">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <rect width="900" height="480" fill="url(#arch-grid)"/>
+
+            <!-- INTERNET -->
+            <g class="arch-node" data-tip="External client requests via HTTPS">
+              <rect x="370" y="18" width="160" height="52" rx="8" fill="#0c1223" stroke="#1c2a45" stroke-width="1.5"/>
+              <text x="450" y="38" fill="#7d91b5" font-family="JetBrains Mono" font-size="9" text-anchor="middle">INTERNET</text>
+              <text x="450" y="57" fill="#c8d4ee" font-family="Space Grotesk" font-size="13" font-weight="600" text-anchor="middle">Client Requests</text>
+            </g>
+
+            <!-- Arrow: Internet → firewalld -->
+            <line x1="450" y1="70" x2="450" y2="110" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-cyan)" class="arch-flow"/>
+            <text x="460" y="95" fill="#00d4ff" font-family="JetBrains Mono" font-size="9">HTTPS :443</text>
+
+            <!-- FIREWALLD ZONE -->
+            <g class="arch-node" data-tip="firewalld portbilling zone — rich rules, rate limiting">
+              <rect x="265" y="110" width="370" height="56" rx="8" fill="#0c1223" stroke="#ff6435" stroke-width="1.5"/>
+              <rect x="265" y="110" width="370" height="56" rx="8" fill="#ff6435" fill-opacity="0.04"/>
+              <text x="330" y="130" fill="#ff6435" font-family="JetBrains Mono" font-size="8">firewalld zone: portbilling</text>
+              <text x="450" y="151" fill="#c8d4ee" font-family="Space Grotesk" font-size="13" font-weight="600" text-anchor="middle">Network Perimeter · Rich Rules · Rate Limiting</text>
+            </g>
+
+            <!-- Arrow: firewalld → Nginx -->
+            <line x1="450" y1="166" x2="450" y2="210" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-cyan)" class="arch-flow"/>
+            <text x="460" y="193" fill="#7d91b5" font-family="JetBrains Mono" font-size="9">TLS termination</text>
+
+            <!-- NGINX -->
+            <g class="arch-node" data-tip="Nginx reverse proxy — TLS 1.3, security headers, upstream health">
+              <rect x="300" y="210" width="300" height="56" rx="8" fill="#0c1223" stroke="#00d4ff" stroke-width="1.5"/>
+              <rect x="300" y="210" width="300" height="56" rx="8" fill="#00d4ff" fill-opacity="0.04"/>
+              <text x="340" y="229" fill="#00d4ff" font-family="JetBrains Mono" font-size="8">nginx :443 → upstream :3000</text>
+              <text x="450" y="251" fill="#c8d4ee" font-family="Space Grotesk" font-size="13" font-weight="600" text-anchor="middle">Nginx · TLS 1.3 · Reverse Proxy</text>
+            </g>
+
+            <!-- Arrow: Nginx → Podman -->
+            <line x1="450" y1="266" x2="450" y2="308" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-cyan)" class="arch-flow"/>
+            <text x="460" y="292" fill="#7d91b5" font-family="JetBrains Mono" font-size="9">127.0.0.1:3000</text>
+
+            <!-- PODMAN CONTAINER -->
+            <g class="arch-node" data-tip="Podman rootless container — portbill app, read-only FS, SELinux Z-label">
+              <rect x="290" y="308" width="320" height="56" rx="8" fill="#0c1223" stroke="#22c55e" stroke-width="1.5"/>
+              <rect x="290" y="308" width="320" height="56" rx="8" fill="#22c55e" fill-opacity="0.04"/>
+              <text x="335" y="327" fill="#22c55e" font-family="JetBrains Mono" font-size="8">podman · read-only · SELinux :Z</text>
+              <text x="450" y="349" fill="#c8d4ee" font-family="Space Grotesk" font-size="13" font-weight="600" text-anchor="middle">portbill Container · Node.js :3000</text>
+            </g>
+
+            <!-- LVM Storage — bottom row -->
+            <!-- Arrow: Container → LVM Data -->
+            <line x1="380" y1="364" x2="200" y2="406" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-green)" class="arch-flow"/>
+            <!-- Arrow: Container → LVM Logs -->
+            <line x1="450" y1="364" x2="450" y2="408" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-green)" class="arch-flow"/>
+            <!-- Arrow: Backup timer → LVM Backup -->
+            <line x1="520" y1="364" x2="700" y2="406" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-orange)" class="arch-flow"/>
+
+            <!-- LVM: billing-data -->
+            <g class="arch-node" data-tip="LVM LV: billing-data — 10G XFS — billing transaction records">
+              <rect x="80" y="408" width="220" height="52" rx="8" fill="#0c1223" stroke="#00d4ff" stroke-width="1"/>
+              <text x="190" y="427" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">lv: billing-data · 10G XFS</text>
+              <text x="190" y="447" fill="#c8d4ee" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">/srv/portbill/data</text>
+            </g>
+
+            <!-- LVM: billing-logs -->
+            <g class="arch-node" data-tip="LVM LV: billing-logs — 5G XFS — app & audit logs with logrotate">
+              <rect x="340" y="408" width="220" height="52" rx="8" fill="#0c1223" stroke="#00d4ff" stroke-width="1"/>
+              <text x="450" y="427" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">lv: billing-logs · 5G XFS</text>
+              <text x="450" y="447" fill="#c8d4ee" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">/srv/portbill/logs</text>
+            </g>
+
+            <!-- LVM: billing-backup -->
+            <g class="arch-node" data-tip="LVM LV: billing-backup — 15G XFS — daily tar.gz with SHA-256 integrity">
+              <rect x="600" y="408" width="220" height="52" rx="8" fill="#0c1223" stroke="#f59e0b" stroke-width="1"/>
+              <text x="710" y="427" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">lv: billing-backup · 15G XFS</text>
+              <text x="710" y="447" fill="#c8d4ee" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">/srv/portbill/backup</text>
+            </g>
+
+            <!-- SSH Admin Access (left side) -->
+            <g class="arch-node" data-tip="SSH on port 2222 — billing-admin group only, key auth, NIST-grade ciphers">
+              <rect x="18" y="210" width="200" height="56" rx="8" fill="#0c1223" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="28" y="229" fill="#f59e0b" font-family="JetBrains Mono" font-size="8">sshd :2222 · key-only</text>
+              <text x="118" y="251" fill="#c8d4ee" font-family="Space Grotesk" font-size="12" font-weight="600" text-anchor="middle">Admin SSH Access</text>
+            </g>
+            <line x1="218" y1="238" x2="300" y2="238" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="230" y="232" fill="#7d91b5" font-family="JetBrains Mono" font-size="8">billing-admin</text>
+
+            <!-- SELinux overlay label -->
+            <g>
+              <rect x="682" y="110" width="200" height="200" rx="8" fill="#8b5cf6" fill-opacity="0.04" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="5,3"/>
+              <text x="782" y="130" fill="#8b5cf6" font-family="JetBrains Mono" font-size="9" text-anchor="middle">SELinux</text>
+              <text x="782" y="147" fill="#8b5cf6" font-family="JetBrains Mono" font-size="9" text-anchor="middle">enforcing</text>
+              <text x="782" y="164" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">httpd_sys_content_t</text>
+              <text x="782" y="180" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">httpd_log_t</text>
+              <text x="782" y="196" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">ssh_port_t :2222</text>
+              <text x="782" y="212" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">http_port_t :3000</text>
+              <text x="782" y="228" fill="#7d91b5" font-family="JetBrains Mono" font-size="7.5" text-anchor="middle">targeted policy</text>
+            </g>
+          </svg>
+        </div>
+        <div class="arch-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#00d4ff"></span>Data Flow</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span>Volume Mounts</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Backup / Admin</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ff6435"></span>Network Perimeter</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span>SELinux Enforcement</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ SCRIPTS ══════════════════════════════════ -->
+    <section id="scripts" class="section section-alt">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">02 / SCRIPTS</div>
+          <h2 class="section-title">Infrastructure Scripts</h2>
+          <p class="section-desc">Seven hardened Bash scripts covering every RHCSA deployment skill — strict mode, ERR traps, idempotent execution, and full structured logging.</p>
+        </div>
+        <div class="scripts-explorer">
+          <div class="scripts-nav" role="tablist" aria-label="Script selection">
+            <button class="script-tab active" role="tab" aria-selected="true" data-script="01_user_group_setup.sh" data-idx="0">
+              <span class="tab-num">01</span>
+              <span class="tab-info">
+                <span class="tab-name">user_group_setup.sh</span>
+                <span class="tab-desc">User &amp; Group Provisioning</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="02_storage_lvm.sh" data-idx="1">
+              <span class="tab-num">02</span>
+              <span class="tab-info">
+                <span class="tab-name">storage_lvm.sh</span>
+                <span class="tab-desc">LVM + XFS Storage</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="03_firewall_selinux.sh" data-idx="2">
+              <span class="tab-num">03</span>
+              <span class="tab-info">
+                <span class="tab-name">firewall_selinux.sh</span>
+                <span class="tab-desc">firewalld + SELinux</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="04_ssh_hardening.sh" data-idx="3">
+              <span class="tab-num">04</span>
+              <span class="tab-info">
+                <span class="tab-name">ssh_hardening.sh</span>
+                <span class="tab-desc">SSH Security</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="05_service_deploy.sh" data-idx="4">
+              <span class="tab-num">05</span>
+              <span class="tab-info">
+                <span class="tab-name">service_deploy.sh</span>
+                <span class="tab-desc">Podman + Nginx Deploy</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="06_acl_backup.sh" data-idx="5">
+              <span class="tab-num">06</span>
+              <span class="tab-info">
+                <span class="tab-name">acl_backup.sh</span>
+                <span class="tab-desc">ACLs + Backup Timer</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+            <button class="script-tab" role="tab" aria-selected="false" data-script="07_log_monitor.sh" data-idx="6">
+              <span class="tab-num">07</span>
+              <span class="tab-info">
+                <span class="tab-name">log_monitor.sh</span>
+                <span class="tab-desc">Logging + Alerting</span>
+              </span>
+              <span class="tab-arrow">›</span>
+            </button>
+          </div>
+          <div class="scripts-viewer" role="tabpanel">
+            <div class="viewer-header">
+              <div class="viewer-file">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                  <line x1="5.5" y1="5" x2="10.5" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                  <line x1="5.5" y1="8" x2="10.5" y2="8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                  <line x1="5.5" y1="11" x2="8.5" y2="11" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                </svg>
+                <span id="viewer-filename">01_user_group_setup.sh</span>
+              </div>
+              <div class="viewer-meta">
+                <span class="viewer-lang">bash</span>
+                <span class="viewer-lines" id="viewer-linecount">— lines</span>
+              </div>
+            </div>
+            <div class="viewer-scroll">
+              <pre class="viewer-pre"><code class="language-bash hljs" id="viewer-code">Loading...</code></pre>
+            </div>
+            <div class="viewer-footer">
+              <div class="viewer-tags" id="viewer-tags"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ SKILLS ══════════════════════════════════ -->
+    <section id="skills" class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">03 / SKILLS</div>
+          <h2 class="section-title">RHCSA Skills Matrix</h2>
+          <p class="section-desc">Every script maps to a core RHCSA EX200 objective — from user management and LVM to SELinux contexts and systemd service units.</p>
+        </div>
+        <div class="skills-grid">
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-cyan">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">User &amp; Group Management</div>
+                <div class="skill-script">01_user_group_setup.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="88"></div></div>
+            <div class="skill-tags">
+              <span class="stag">useradd</span><span class="stag">groupadd</span><span class="stag">chage</span><span class="stag">sudoers.d</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-orange">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10h6M10 7v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">Storage Management (LVM)</div>
+                <div class="skill-script">02_storage_lvm.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="92"></div></div>
+            <div class="skill-tags">
+              <span class="stag">pvcreate</span><span class="stag">vgcreate</span><span class="stag">lvcreate</span><span class="stag">mkfs.xfs</span><span class="stag">fstab</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-red">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 7v6c0 3 3 5 7 5s7-2 7-5V7L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">firewalld Configuration</div>
+                <div class="skill-script">03_firewall_selinux.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="85"></div></div>
+            <div class="skill-tags">
+              <span class="stag">zones</span><span class="stag">rich rules</span><span class="stag">rate limit</span><span class="stag">services</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-purple">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 7v6c0 3 3 5 7 5s7-2 7-5V7L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10" r="2" fill="currentColor"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">SELinux Configuration</div>
+                <div class="skill-script">03_firewall_selinux.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="80"></div></div>
+            <div class="skill-tags">
+              <span class="stag">semanage</span><span class="stag">fcontext</span><span class="stag">restorecon</span><span class="stag">setsebool</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-amber">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="11" width="14" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 11V7a3 3 0 016 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">SSH Hardening</div>
+                <div class="skill-script">04_ssh_hardening.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="95"></div></div>
+            <div class="skill-tags">
+              <span class="stag">sshd_config</span><span class="stag">PubkeyAuth</span><span class="stag">AllowGroups</span><span class="stag">ciphers</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-green">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">Systemd Service Management</div>
+                <div class="skill-script">05_service_deploy.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="90"></div></div>
+            <div class="skill-tags">
+              <span class="stag">unit files</span><span class="stag">ExecStart</span><span class="stag">Restart=</span><span class="stag">timers</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-cyan">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M13 3h4v4M9 11l8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">ACL Configuration</div>
+                <div class="skill-script">06_acl_backup.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="82"></div></div>
+            <div class="skill-tags">
+              <span class="stag">setfacl</span><span class="stag">getfacl</span><span class="stag">default ACL</span><span class="stag">inheritance</span>
+            </div>
+          </div>
+
+          <div class="skill-card reveal">
+            <div class="skill-card-header">
+              <div class="skill-icon-wrap skill-icon-orange">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="skill-name">Log Monitoring</div>
+                <div class="skill-script">07_log_monitor.sh</div>
+              </div>
+            </div>
+            <div class="skill-bar-wrap"><div class="skill-bar" data-width="87"></div></div>
+            <div class="skill-tags">
+              <span class="stag">journalctl</span><span class="stag">rsyslog</span><span class="stag">logrotate</span><span class="stag">alerting</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ SECURITY ════════════════════════════════ -->
+    <section id="security" class="section section-alt">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">04 / SECURITY</div>
+          <h2 class="section-title">Hardening Deep-Dive</h2>
+          <p class="section-desc">Three independent hardening layers — every directive deliberate, every context explicit.</p>
+        </div>
+        <div class="security-tabs-wrap">
+          <div class="sec-tabs" role="tablist">
+            <button class="sec-tab active" role="tab" data-sec="selinux">SELinux</button>
+            <button class="sec-tab" role="tab" data-sec="firewall">firewalld</button>
+            <button class="sec-tab" role="tab" data-sec="ssh">SSH</button>
+          </div>
+          <div class="sec-panels">
+            <!-- SELinux Panel -->
+            <div class="sec-panel active" id="sec-selinux">
+              <div class="sec-panel-inner">
+                <div class="sec-info">
+                  <h3>SELinux Enforcing Mode</h3>
+                  <p>Every file, port, and process receives an explicit SELinux context. No policy shortcuts — targeted policy with custom fcontext rules.</p>
+                  <div class="sec-checklist">
+                    <div class="check-item check-pass"><span>Enforcing mode — permanent in /etc/selinux/config</span></div>
+                    <div class="check-item check-pass"><span>httpd_sys_content_t on /srv/portbill/data</span></div>
+                    <div class="check-item check-pass"><span>httpd_log_t on /srv/portbill/logs</span></div>
+                    <div class="check-item check-pass"><span>ssh_port_t on port 2222/tcp</span></div>
+                    <div class="check-item check-pass"><span>http_port_t on port 3000/tcp</span></div>
+                    <div class="check-item check-pass"><span>httpd_can_network_connect=on (Nginx→Podman)</span></div>
+                    <div class="check-item check-pass"><span>Podman volumes mounted with :Z (auto-relabel)</span></div>
+                    <div class="check-item check-pass"><span>AVC denials logged to /var/log/portbill-avc.log</span></div>
+                  </div>
+                </div>
+                <div class="sec-code-wrap">
+                  <pre><code class="language-bash hljs">## Applied by 03_firewall_selinux.sh
+
+# Set SELinux to enforcing (persistent)
+setenforce 1
+sed -i 's/SELINUX=.*/SELINUX=enforcing/' \
+    /etc/selinux/config
+
+# File contexts for billing app
+semanage fcontext --add \
+  --type httpd_sys_content_t \
+  "/srv/portbill/data(/.*)?"
+
+semanage fcontext --add \
+  --type httpd_log_t \
+  "/srv/portbill/logs(/.*)?"
+
+# Port contexts
+semanage port --add \
+  --type ssh_port_t \
+  --proto tcp 2222
+
+semanage port --add \
+  --type http_port_t \
+  --proto tcp 3000
+
+# Apply contexts
+restorecon -Rv /srv/portbill/
+
+# Booleans — least privilege
+setsebool -P httpd_can_network_connect on
+setsebool -P httpd_read_user_content  off
+setsebool -P httpd_enable_homedirs    off</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- Firewall Panel -->
+            <div class="sec-panel" id="sec-firewall">
+              <div class="sec-panel-inner">
+                <div class="sec-info">
+                  <h3>firewalld Zone Architecture</h3>
+                  <p>A dedicated <code>portbilling</code> zone replaces the default public zone, with rich rules restricting SSH to the admin subnet only.</p>
+                  <div class="sec-checklist">
+                    <div class="check-item check-pass"><span>Custom zone: portbilling</span></div>
+                    <div class="check-item check-pass"><span>Public zone target=DROP</span></div>
+                    <div class="check-item check-pass"><span>SSH port 2222 — admin subnet only (192.168.10.0/24)</span></div>
+                    <div class="check-item check-pass"><span>HTTPS from billing LAN (10.10.0.0/16)</span></div>
+                    <div class="check-item check-pass"><span>HTTP rate-limited to 100 connections/min</span></div>
+                    <div class="check-item check-pass"><span>Zone target=REJECT (graceful refusal)</span></div>
+                    <div class="check-item check-pass"><span>All rules permanent (--permanent + reload)</span></div>
+                  </div>
+                </div>
+                <div class="sec-code-wrap">
+                  <pre><code class="language-bash hljs">## Applied by 03_firewall_selinux.sh
+
+# Create dedicated billing zone
+firewall-cmd --permanent \
+    --new-zone=portbilling
+
+# Admin-only SSH (port 2222)
+firewall-cmd --permanent \
+    --zone=portbilling \
+    --add-rich-rule="rule family='ipv4' \
+      source address='192.168.10.0/24' \
+      port port='2222' protocol='tcp' accept"
+
+# Billing LAN → HTTPS
+firewall-cmd --permanent \
+    --zone=portbilling \
+    --add-rich-rule="rule family='ipv4' \
+      source address='10.10.0.0/16' \
+      service name='https' accept"
+
+# Rate limit public HTTP
+firewall-cmd --permanent \
+    --zone=portbilling \
+    --add-rich-rule="rule family='ipv4' \
+      service name='http' \
+      limit value='100/m' accept"
+
+# Graceful rejection of everything else
+firewall-cmd --permanent \
+    --zone=portbilling --set-target=REJECT
+
+firewall-cmd --reload</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- SSH Panel -->
+            <div class="sec-panel" id="sec-ssh">
+              <div class="sec-panel-inner">
+                <div class="sec-info">
+                  <h3>SSH Hardening (CIS + NIST)</h3>
+                  <p>Key-only authentication on port 2222, restricted to <code>billing-admin</code> group. Crypto limited to FIPS-compatible algorithms.</p>
+                  <div class="sec-checklist">
+                    <div class="check-item check-pass"><span>Custom port 2222 (SELinux-labelled)</span></div>
+                    <div class="check-item check-pass"><span>PermitRootLogin no</span></div>
+                    <div class="check-item check-pass"><span>PasswordAuthentication no</span></div>
+                    <div class="check-item check-pass"><span>AllowGroups billing-admin</span></div>
+                    <div class="check-item check-pass"><span>MaxAuthTries 3 · LoginGraceTime 30s</span></div>
+                    <div class="check-item check-pass"><span>X11/Agent/TCP forwarding disabled</span></div>
+                    <div class="check-item check-pass"><span>Ed25519 + RSA-SHA2 host keys only</span></div>
+                    <div class="check-item check-pass"><span>ChaCha20 + AES256-GCM ciphers only</span></div>
+                  </div>
+                </div>
+                <div class="sec-code-wrap">
+                  <pre><code class="language-bash hljs">## config/sshd_config.hardened
+
+Port                    2222
+PermitRootLogin         no
+PasswordAuthentication  no
+PubkeyAuthentication    yes
+AllowGroups             billing-admin
+
+LoginGraceTime          30
+MaxAuthTries            3
+MaxSessions             5
+ClientAliveInterval     300
+ClientAliveCountMax     2
+
+X11Forwarding           no
+AllowAgentForwarding    no
+AllowTcpForwarding      no
+
+LogLevel                VERBOSE
+Banner                  /etc/ssh/billing-banner
+
+# FIPS-compatible crypto
+KexAlgorithms \
+  curve25519-sha256,\
+  diffie-hellman-group14-sha256
+
+Ciphers \
+  chacha20-poly1305@openssh.com,\
+  aes256-gcm@openssh.com
+
+MACs \
+  hmac-sha2-512-etm@openssh.com,\
+  hmac-sha2-256-etm@openssh.com</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ PIPELINE ════════════════════════════════ -->
+    <section id="pipeline" class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">05 / PIPELINE</div>
+          <h2 class="section-title">Deployment Pipeline</h2>
+          <p class="section-desc">Run scripts in order — each builds on the last. Idempotent design means re-runs are safe at any stage.</p>
+        </div>
+        <div class="pipeline-wrap">
+          <div class="pipeline-step reveal" data-step="1">
+            <div class="step-connector"></div>
+            <div class="step-badge">01</div>
+            <div class="step-content">
+              <div class="step-title">User &amp; Group Provisioning</div>
+              <div class="step-script">./scripts/01_user_group_setup.sh</div>
+              <div class="step-desc">Creates 4 department groups, 5 users, password policy, sudo rules, and 0750 home directories.</div>
+              <div class="step-tags">
+                <span class="stag">billing-admin</span><span class="stag">billing-ops</span><span class="stag">port-ops</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="2">
+            <div class="step-connector"></div>
+            <div class="step-badge">02</div>
+            <div class="step-content">
+              <div class="step-title">LVM Storage Provisioning</div>
+              <div class="step-script">./scripts/02_storage_lvm.sh [device]</div>
+              <div class="step-desc">Partitions disk, creates PV/VG/3 LVs, formats XFS, writes fstab with UUID, mounts, applies SELinux contexts.</div>
+              <div class="step-tags">
+                <span class="stag">30G total</span><span class="stag">XFS + noatime</span><span class="stag">UUID fstab</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="3">
+            <div class="step-connector"></div>
+            <div class="step-badge">03</div>
+            <div class="step-content">
+              <div class="step-title">Firewall &amp; SELinux Hardening</div>
+              <div class="step-script">./scripts/03_firewall_selinux.sh</div>
+              <div class="step-desc">Creates portbilling zone, rich rules with CIDR restrictions, rate limiting, SELinux contexts and booleans.</div>
+              <div class="step-tags">
+                <span class="stag">enforcing</span><span class="stag">targeted</span><span class="stag">REJECT</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="4">
+            <div class="step-connector"></div>
+            <div class="step-badge">04</div>
+            <div class="step-content">
+              <div class="step-title">SSH Hardening</div>
+              <div class="step-script">./scripts/04_ssh_hardening.sh</div>
+              <div class="step-desc">Backs up sshd_config, applies hardened config, validates syntax before reload, creates authorized_keys skeleton.</div>
+              <div class="step-tags">
+                <span class="stag">port 2222</span><span class="stag">key-only</span><span class="stag">VERBOSE log</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="5">
+            <div class="step-connector"></div>
+            <div class="step-badge">05</div>
+            <div class="step-content">
+              <div class="step-title">Application Deployment</div>
+              <div class="step-script">./scripts/05_service_deploy.sh</div>
+              <div class="step-desc">Pulls Podman image, writes systemd unit with hardening directives, generates TLS cert, configures Nginx, health-checks the container.</div>
+              <div class="step-tags">
+                <span class="stag">Podman</span><span class="stag">TLS 1.3</span><span class="stag">health check</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="6">
+            <div class="step-connector"></div>
+            <div class="step-badge">06</div>
+            <div class="step-content">
+              <div class="step-title">ACLs &amp; Automated Backup</div>
+              <div class="step-script">./scripts/06_acl_backup.sh</div>
+              <div class="step-desc">Sets granular POSIX ACLs with inheritance, creates backup script with SHA-256 integrity, enables systemd timer for daily 02:00 backup.</div>
+              <div class="step-tags">
+                <span class="stag">setfacl -d</span><span class="stag">sha256sum</span><span class="stag">30-day retention</span>
+              </div>
+            </div>
+          </div>
+          <div class="pipeline-step reveal" data-step="7">
+            <div class="step-badge">07</div>
+            <div class="step-content">
+              <div class="step-title">Log Monitoring &amp; Alerting</div>
+              <div class="step-script">./scripts/07_log_monitor.sh</div>
+              <div class="step-desc">Configures rsyslog routing, logrotate with 90-day retention, creates real-time monitor service with email alerts, daily summary timer.</div>
+              <div class="step-tags">
+                <span class="stag">rsyslog</span><span class="stag">logrotate</span><span class="stag">journalctl</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ TECH STACK ══════════════════════════════ -->
+    <section id="stack" class="section section-alt">
+      <div class="section-inner">
+        <div class="section-header">
+          <div class="section-label">06 / STACK</div>
+          <h2 class="section-title">Technologies Used</h2>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><path d="M10 20h20M20 10v20" stroke="#ff6435" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stack-name">RHEL 9</div>
+            <div class="stack-desc">Red Hat Enterprise Linux 9 — primary deployment OS</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><path d="M8 28V12l12-4 12 4v16l-12 4-12-4z" stroke="#22c55e" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stack-name">Nginx</div>
+            <div class="stack-desc">TLS reverse proxy with security headers and upstream health</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><rect x="10" y="14" width="20" height="14" rx="3" stroke="#00d4ff" stroke-width="1.8"/><path d="M15 14v-4a5 5 0 0110 0v4" stroke="#00d4ff" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stack-name">Podman</div>
+            <div class="stack-desc">Rootless OCI containers with systemd integration on RHEL 9</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><path d="M12 8h16v24H12z" stroke="#f59e0b" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 14h8M16 19h8M16 24h5" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stack-name">Bash</div>
+            <div class="stack-desc">Strict-mode scripts with ERR trap, structured logging, color output</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><circle cx="20" cy="20" r="10" stroke="#8b5cf6" stroke-width="1.8"/><path d="M14 20l4 4 8-8" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stack-name">SELinux</div>
+            <div class="stack-desc">Enforcing mode — targeted policy with custom fcontext rules</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><rect x="9" y="12" width="22" height="16" rx="2" stroke="#00d4ff" stroke-width="1.8"/><path d="M15 20h10M20 16v8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stack-name">LVM + XFS</div>
+            <div class="stack-desc">Logical volume management with XFS filesystem and UUID fstab</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><path d="M10 14a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H12a2 2 0 01-2-2V14z" stroke="#ff6435" stroke-width="1.8"/><path d="M15 18l5 4 5-4" stroke="#ff6435" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stack-name">Firebase</div>
+            <div class="stack-desc">Cloud Firestore backend for billing transaction persistence</div>
+          </div>
+          <div class="stack-card reveal">
+            <div class="stack-icon">
+              <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#1c2a45"/><circle cx="20" cy="20" r="10" stroke="#22c55e" stroke-width="1.8"/><path d="M16 20h8M20 16v8" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stack-name">Vercel</div>
+            <div class="stack-desc">Global CDN deployment for this portfolio showcase site</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ FOOTER ══════════════════════════════════ -->
+    <footer id="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="brand-text">PORT<span class="brand-sep">/</span>INFRA</div>
+          <div class="footer-tagline">RHEL 9 · Enterprise Linux · DevOps Portfolio</div>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/samiulAsumel/smart-port-billing-infra" target="_blank" rel="noopener">GitHub Repository</a>
+          <a href="https://github.com/samiulAsumel" target="_blank" rel="noopener">Portfolio</a>
+          <a href="#scripts">View Scripts</a>
+        </div>
+        <div class="footer-meta">
+          <span>Built by Samiul A. Sumel</span>
+          <span class="footer-sep">·</span>
+          <span>RHCSA EX200 Candidate</span>
+          <span class="footer-sep">·</span>
+          <span>Junior DevOps Engineer</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
